@@ -26,6 +26,16 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
     /** Opens full library grid via {@link #getReloadPageKey()} (Phase 3.4). */
     private static final String TYPE_LIBRARY = "library";
 
+    /**
+     * Wrapped APK package id (upstream SmartTube). App-module {@code R.drawable} is not merged.
+     * Assets are copied into the decoded APK by {@code packageWrapperApk}.
+     */
+    private static final String WRAPPER_PACKAGE = "org.smarttube.beta";
+    private static final String DRAWABLE_ALL_MOVIES =
+            "android.resource://" + WRAPPER_PACKAGE + "/drawable/all_movies";
+    private static final String DRAWABLE_ALL_TV_SHOWS =
+            "android.resource://" + WRAPPER_PACKAGE + "/drawable/all_tv_shows";
+
     private final PlexMediaItem mItem;
     private final int mId;
     @Nullable
@@ -207,12 +217,28 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
 
     @Override
     public String getCardImageUrl() {
-        return mItem.getThumbUrl();
+        String libraryThumb = libraryBrowseThumbUrl();
+        return libraryThumb != null ? libraryThumb : mItem.getThumbUrl();
     }
 
     @Override
     public String getBackgroundImageUrl() {
-        return mItem.getThumbUrl();
+        String libraryThumb = libraryBrowseThumbUrl();
+        return libraryThumb != null ? libraryThumb : mItem.getThumbUrl();
+    }
+
+    @Nullable
+    private String libraryBrowseThumbUrl() {
+        if (!isLibraryBrowse()) {
+            return null;
+        }
+        if (TYPE_SHOW.equalsIgnoreCase(mLibraryType)) {
+            return DRAWABLE_ALL_TV_SHOWS;
+        }
+        if (TYPE_MOVIE.equalsIgnoreCase(mLibraryType)) {
+            return DRAWABLE_ALL_MOVIES;
+        }
+        return null;
     }
 
     @Override

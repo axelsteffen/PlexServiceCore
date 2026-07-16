@@ -1,6 +1,7 @@
 package com.liskovsoft.plexapi.adapter;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.plexapi.library.PlexLibraryImpl;
 import com.liskovsoft.plexapi.library.PlexMediaItemImpl;
 import com.liskovsoft.plexserviceinterfaces.data.PlexBackedMediaItem;
 import com.liskovsoft.plexserviceinterfaces.data.PlexMediaItem;
@@ -141,5 +142,30 @@ public class PlexMediaItemAdapterTest {
         assertNotNull(item);
         assertEquals(10, item.getPercentWatched());
         assertEquals(540, item.getStartTimeSeconds());
+    }
+
+    @Test
+    public void fromLibraryBrowse_movie_usesAllMoviesDrawable() {
+        MediaItem item = PlexMediaItemAdapter.fromLibraryBrowse(
+                new PlexLibraryImpl("1", "Movies", "movie"));
+
+        assertNotNull(item);
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_movies",
+                item.getCardImageUrl());
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_movies",
+                item.getBackgroundImageUrl());
+        assertTrue(item.hasUploads());
+    }
+
+    @Test
+    public void fromLibraryBrowse_show_usesAllTvShowsDrawable() {
+        MediaItem item = PlexMediaItemAdapter.fromLibraryBrowse(
+                new PlexLibraryImpl("2", "TV Shows", "show"));
+
+        assertNotNull(item);
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_tv_shows",
+                item.getCardImageUrl());
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_tv_shows",
+                item.getBackgroundImageUrl());
     }
 }
