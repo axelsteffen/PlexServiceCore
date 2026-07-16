@@ -38,7 +38,7 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
         if (metadata == null || metadata.getRatingKey() == null || metadata.getRatingKey().isEmpty()) {
             return null;
         }
-        String thumbUrl = PlexUrlHelper.absoluteUrl(baseUrl, metadata.getThumb(), token);
+        String thumbUrl = PlexUrlHelper.absoluteUrl(baseUrl, resolveThumbPath(metadata), token);
         return new PlexMediaItemImpl(
                 metadata.getRatingKey(),
                 metadata.getKey(),
@@ -48,6 +48,34 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
                 thumbUrl,
                 metadata.getYear(),
                 metadata.getViewOffset());
+    }
+
+    /**
+     * PMS often omits {@code thumb} on some items; fall back to art / parent art,
+     * then the stable metadata thumb endpoint.
+     */
+    static String resolveThumbPath(PlexMetadata metadata) {
+        String path = firstNonEmpty(
+                metadata.getThumb(),
+                metadata.getParentThumb(),
+                metadata.getGrandparentThumb(),
+                metadata.getArt());
+        if (path != null) {
+            return path;
+        }
+        return "/library/metadata/" + metadata.getRatingKey() + "/thumb";
+    }
+
+    private static String firstNonEmpty(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     @Override

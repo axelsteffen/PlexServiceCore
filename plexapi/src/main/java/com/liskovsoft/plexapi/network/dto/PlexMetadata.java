@@ -40,6 +40,13 @@ public class PlexMetadata {
     @SerializedName("art")
     private String mArt;
 
+    /** Episode/season: show or season poster when item thumb is missing. */
+    @SerializedName("parentThumb")
+    private String mParentThumb;
+
+    @SerializedName("grandparentThumb")
+    private String mGrandparentThumb;
+
     @SerializedName("Media")
     private List<PlexMedia> mMedia;
 
@@ -81,6 +88,14 @@ public class PlexMetadata {
 
     public String getArt() {
         return mArt;
+    }
+
+    public String getParentThumb() {
+        return mParentThumb;
+    }
+
+    public String getGrandparentThumb() {
+        return mGrandparentThumb;
     }
 
     public List<PlexMedia> getMedia() {

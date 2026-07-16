@@ -179,6 +179,11 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
 
     @Override
     public long getDurationMs() {
+        // Show/season "duration" from PMS is not a playable length; keeping it caused
+        // Video.isMembersOnly() (videoId null + duration > 0) to drop every TV show card.
+        if (isContainer() || isLibraryBrowse()) {
+            return 0L;
+        }
         return mItem.getDurationMs();
     }
 
@@ -252,10 +257,15 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
     public double getRatingScore() {
         return 0;
     }
-
+    
+    /**
+     * Must stay {@code false}. SmartTube's {@code Video.isEmpty()} treats {@code isMovie}
+     * as YouTube "Free with Ads" (unsupported) and drops the card. Plex movies are normal
+     * playable items ({@link #getType()} → {@code TYPE_VIDEO}).
+     */
     @Override
     public boolean isMovie() {
-        return TYPE_MOVIE.equalsIgnoreCase(mItem.getType());
+        return false;
     }
 
     @Override

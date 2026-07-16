@@ -36,7 +36,8 @@ public class PlexMediaItemAdapterTest {
         assertEquals("https://plex/thumb.jpg?X-Plex-Token=t", item.getBackgroundImageUrl());
         assertEquals("2020", item.getSecondTitle());
         assertEquals("2020", item.getProductionDate());
-        assertTrue(item.isMovie());
+        // isMovie must be false: SmartTube Video.isEmpty() drops YouTube "Free with Ads" movies
+        assertFalse(item.isMovie());
         assertFalse(item.isLive());
         assertFalse(item.isShorts());
     }
@@ -50,8 +51,9 @@ public class PlexMediaItemAdapterTest {
 
     @Test
     public void from_show_mapsAsPlaylistContainer() {
+        // PMS often sends duration on shows; adapter must zero it (Video.isMembersOnly).
         PlexMediaItem plex = new PlexMediaItemImpl(
-                "2001", "/library/metadata/2001", "Breaking Bad", "show", 0, null, 2008);
+                "2001", "/library/metadata/2001", "Breaking Bad", "show", 5_400_000L, null, 2008);
 
         MediaItem item = PlexMediaItemAdapter.from(plex);
 
@@ -59,6 +61,7 @@ public class PlexMediaItemAdapterTest {
         assertEquals(MediaItem.TYPE_PLAYLIST, item.getType());
         assertNull(item.getVideoId());
         assertEquals("2001", item.getPlaylistId());
+        assertEquals(0L, item.getDurationMs());
         assertTrue(item.hasUploads());
         assertFalse(item.isMovie());
     }

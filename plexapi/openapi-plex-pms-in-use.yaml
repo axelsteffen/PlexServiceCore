@@ -255,7 +255,7 @@ paths:
     post:
       tags: [plex-tv-auth]
       summary: Create PIN for device claim
-      description: "Code: PlexTvApi.createPin. Query strong=true recommended."
+      description: "Code: PlexTvApi.createPin. Use strong=false for short plex.tv/link codes; strong=true for long QR codes."
       operationId: createPin
       servers:
         - url: https://plex.tv

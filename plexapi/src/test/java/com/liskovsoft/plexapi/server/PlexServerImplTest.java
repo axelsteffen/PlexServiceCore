@@ -21,24 +21,54 @@ public class PlexServerImplTest {
     private static final Type CONNECTIONS_TYPE = new TypeToken<List<PlexResourceConnection>>() {}.getType();
 
     @Test
-    public void pickBaseUrl_prefersLocalHttps() {
+    public void pickBaseUrl_prefersRemoteWhenPrivateLocalAlsoPresent() {
+        // Remote client: ignore server-LAN / Docker "local" URIs.
         List<PlexResourceConnection> connections = GSON.fromJson("["
-                + "{\"protocol\":\"http\",\"uri\":\"http://remote.example:32400\",\"local\":false},"
-                + "{\"protocol\":\"https\",\"uri\":\"https://192.168.1.10:32400\",\"local\":true},"
-                + "{\"protocol\":\"http\",\"uri\":\"http://192.168.1.10:32400\",\"local\":true}"
+                + "{\"protocol\":\"https\","
+                + "\"address\":\"172.18.0.3\",\"port\":32400,"
+                + "\"uri\":\"https://172-18-0-3.abc123.plex.direct:32400\",\"local\":true},"
+                + "{\"protocol\":\"http\","
+                + "\"address\":\"192.168.32.10\",\"port\":32400,"
+                + "\"uri\":\"http://192.168.32.10:32400\",\"local\":true},"
+                + "{\"protocol\":\"https\","
+                + "\"address\":\"1.2.3.4\",\"port\":32400,"
+                + "\"uri\":\"https://1-2-3-4.abc123.plex.direct:32400\",\"local\":false}"
                 + "]", CONNECTIONS_TYPE);
 
-        assertEquals("https://192.168.1.10:32400", PlexServerImpl.pickBaseUrl(connections));
+        assertEquals("https://1-2-3-4.abc123.plex.direct:32400",
+                PlexServerImpl.pickBaseUrl(connections));
     }
 
     @Test
-    public void pickBaseUrl_prefersLocalOverRemoteHttps() {
+    public void pickBaseUrl_prefersRemoteHttpsOverHostnameRemote() {
         List<PlexResourceConnection> connections = GSON.fromJson("["
-                + "{\"protocol\":\"https\",\"uri\":\"https://remote.example:32400\",\"local\":false},"
-                + "{\"protocol\":\"http\",\"uri\":\"http://192.168.1.10:32400\",\"local\":true}"
+                + "{\"protocol\":\"http\",\"uri\":\"http://remote.example:32400\",\"local\":false},"
+                + "{\"protocol\":\"https\",\"uri\":\"https://remote.example:32400\",\"local\":false}"
                 + "]", CONNECTIONS_TYPE);
 
-        assertEquals("http://192.168.1.10:32400", PlexServerImpl.pickBaseUrl(connections));
+        assertEquals("https://remote.example:32400", PlexServerImpl.pickBaseUrl(connections));
+    }
+
+    @Test
+    public void pickBaseUrl_whenOnlyLocal_prefersLanOverDockerPlexDirect() {
+        List<PlexResourceConnection> connections = GSON.fromJson("["
+                + "{\"protocol\":\"https\","
+                + "\"address\":\"172.18.0.3\",\"port\":32400,"
+                + "\"uri\":\"https://172-18-0-3.abc123.plex.direct:32400\",\"local\":true},"
+                + "{\"protocol\":\"http\","
+                + "\"address\":\"192.168.32.10\",\"port\":32400,"
+                + "\"uri\":\"http://192.168.32.10:32400\",\"local\":true}"
+                + "]", CONNECTIONS_TYPE);
+
+        assertEquals("http://192.168.32.10:32400", PlexServerImpl.pickBaseUrl(connections));
+    }
+
+    @Test
+    public void ipv4FromPlexDirectHost_parsesEmbeddedIp() {
+        assertEquals("172.18.0.3",
+                PlexServerImpl.ipv4FromPlexDirectHost(
+                        "172-18-0-3.24e04906fce74443a891d4331b4e4aa5.plex.direct"));
+        assertNull(PlexServerImpl.ipv4FromPlexDirectHost("example.com"));
     }
 
     @Test
