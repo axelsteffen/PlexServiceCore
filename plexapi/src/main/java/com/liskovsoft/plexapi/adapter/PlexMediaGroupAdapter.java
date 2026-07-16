@@ -21,17 +21,37 @@ import java.util.List;
 public final class PlexMediaGroupAdapter implements MediaGroup {
     private static final String TYPE_LIBRARY_STUB = "library";
 
+    /** Row / pagination kind for home shelves and library browse. */
+    public enum Kind {
+        LIBRARY,
+        LIBRARY_GRID,
+        CONTAINER,
+        ON_DECK,
+        RECENTLY_ADDED,
+        WATCHLIST,
+        HUB_RECOMMENDED
+    }
+
+    private final Kind mKind;
     private final PlexLibrary mLibrary;
     private final PlexMediaItem mContainer;
+    private final String mTitle;
+    private final int mWatchlistType;
     private final List<MediaItem> mMediaItems;
     private final String mNextPageKey;
 
-    private PlexMediaGroupAdapter(@Nullable PlexLibrary library,
+    private PlexMediaGroupAdapter(Kind kind,
+                                  @Nullable PlexLibrary library,
                                   @Nullable PlexMediaItem container,
+                                  @Nullable String title,
+                                  int watchlistType,
                                   List<MediaItem> mediaItems,
                                   @Nullable String nextPageKey) {
+        mKind = kind != null ? kind : Kind.LIBRARY;
         mLibrary = library;
         mContainer = container;
+        mTitle = title;
+        mWatchlistType = watchlistType;
         mMediaItems = mediaItems;
         mNextPageKey = nextPageKey;
     }
@@ -62,7 +82,86 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
         appendItems(mediaItems, items);
 
         List<MediaItem> result = mediaItems.isEmpty() ? null : mediaItems;
-        return new PlexMediaGroupAdapter(library, null, result, nextPageKeyFrom(page));
+        return new PlexMediaGroupAdapter(
+                Kind.LIBRARY, library, null, null, 0, result, nextPageKeyFrom(page));
+    }
+
+    /**
+     * Library row with browse stub + custom hub/recommended items (not {@code /all}).
+     */
+    @Nullable
+    public static PlexMediaGroupAdapter fromRecommended(@Nullable PlexLibrary library,
+                                                        @Nullable List<PlexMediaItem> items,
+                                                        @Nullable PlexPage page) {
+        return fromRecommended(library, null, items, page);
+    }
+
+    @Nullable
+    public static PlexMediaGroupAdapter fromRecommended(@Nullable PlexLibrary library,
+                                                        @Nullable String title,
+                                                        @Nullable List<PlexMediaItem> items,
+                                                        @Nullable PlexPage page) {
+        if (library == null || library.getKey() == null || library.getKey().isEmpty()) {
+            return null;
+        }
+
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        MediaItem browseStub = PlexMediaItemAdapter.fromLibraryBrowse(library);
+        if (browseStub != null) {
+            mediaItems.add(browseStub);
+        }
+        appendItems(mediaItems, items);
+
+        List<MediaItem> result = mediaItems.isEmpty() ? null : mediaItems;
+        return new PlexMediaGroupAdapter(
+                Kind.HUB_RECOMMENDED, library, null, title, 0, result, nextPageKeyFrom(page));
+    }
+
+    /**
+     * Titled shelf without browse stub (Continue Watching, Recently Added, Watchlist).
+     */
+    @Nullable
+    public static PlexMediaGroupAdapter fromSimple(@Nullable String title,
+                                                   @Nullable Kind kind,
+                                                   @Nullable PlexLibrary library,
+                                                   @Nullable List<PlexMediaItem> items,
+                                                   @Nullable PlexPage page) {
+        return fromSimple(title, kind, library, 0, items, page);
+    }
+
+    @Nullable
+    public static PlexMediaGroupAdapter fromSimple(@Nullable String title,
+                                                   @Nullable Kind kind,
+                                                   @Nullable PlexLibrary library,
+                                                   int watchlistType,
+                                                   @Nullable List<PlexMediaItem> items,
+                                                   @Nullable PlexPage page) {
+        if (title == null || title.isEmpty()) {
+            return null;
+        }
+        Kind resolved = kind != null ? kind : Kind.ON_DECK;
+        if (resolved != Kind.WATCHLIST
+                && (library == null || library.getKey() == null || library.getKey().isEmpty())) {
+            // Multi-library merge: allow null library (no further pagination).
+            if (items == null || items.isEmpty()) {
+                return null;
+            }
+            ArrayList<MediaItem> mediaItems = new ArrayList<>();
+            appendItems(mediaItems, items);
+            if (mediaItems.isEmpty()) {
+                return null;
+            }
+            return new PlexMediaGroupAdapter(
+                    resolved, null, null, title, watchlistType, mediaItems, null);
+        }
+
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        appendItems(mediaItems, items);
+        if (mediaItems.isEmpty()) {
+            return null;
+        }
+        return new PlexMediaGroupAdapter(
+                resolved, library, null, title, watchlistType, mediaItems, nextPageKeyFrom(page));
     }
 
     /**
@@ -80,7 +179,8 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
         appendItems(mediaItems, items);
 
         List<MediaItem> result = mediaItems.isEmpty() ? null : mediaItems;
-        return new PlexMediaGroupAdapter(library, null, result, nextPageKeyFrom(page));
+        return new PlexMediaGroupAdapter(
+                Kind.LIBRARY_GRID, library, null, null, 0, result, nextPageKeyFrom(page));
     }
 
     /**
@@ -104,7 +204,8 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
         appendItems(mediaItems, items);
 
         List<MediaItem> result = mediaItems.isEmpty() ? null : mediaItems;
-        return new PlexMediaGroupAdapter(null, container, result, nextPageKeyFrom(page));
+        return new PlexMediaGroupAdapter(
+                Kind.CONTAINER, null, container, null, 0, result, nextPageKeyFrom(page));
     }
 
     /**
@@ -126,10 +227,21 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
         }
 
         return new PlexMediaGroupAdapter(
+                base.mKind,
                 base.mLibrary,
                 base.mContainer,
+                base.mTitle,
+                base.mWatchlistType,
                 mediaItems,
                 nextPageKeyFrom(page));
+    }
+
+    public Kind getKind() {
+        return mKind;
+    }
+
+    public int getWatchlistType() {
+        return mWatchlistType;
     }
 
     /** Underlying Plex library (section key for later pagination / drill-down). */
@@ -144,11 +256,23 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
     }
 
     public boolean isLibraryGroup() {
-        return mLibrary != null;
+        return mKind == Kind.LIBRARY || mKind == Kind.LIBRARY_GRID || mKind == Kind.HUB_RECOMMENDED;
     }
 
     public boolean isContainerGroup() {
-        return mContainer != null;
+        return mKind == Kind.CONTAINER && mContainer != null;
+    }
+
+    public boolean isOnDeckGroup() {
+        return mKind == Kind.ON_DECK;
+    }
+
+    public boolean isRecentlyAddedGroup() {
+        return mKind == Kind.RECENTLY_ADDED;
+    }
+
+    public boolean isWatchlistGroup() {
+        return mKind == Kind.WATCHLIST;
     }
 
     @Override
@@ -164,6 +288,9 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
 
     @Override
     public String getTitle() {
+        if (mTitle != null && !mTitle.isEmpty()) {
+            return mTitle;
+        }
         if (mLibrary != null) {
             return mLibrary.getTitle();
         }

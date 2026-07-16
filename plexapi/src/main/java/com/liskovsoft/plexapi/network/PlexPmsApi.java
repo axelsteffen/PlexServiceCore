@@ -38,6 +38,25 @@ public interface PlexPmsApi {
             @Header(PlexHeaders.CONTAINER_SIZE) Integer containerSize,
             @Header(PlexHeaders.TOKEN) String token);
 
+    @GET("library/sections/{sectionId}/onDeck")
+    Call<MediaContainerResponse> getSectionOnDeck(
+            @Path("sectionId") String sectionId,
+            @Header(PlexHeaders.CONTAINER_START) Integer containerStart,
+            @Header(PlexHeaders.CONTAINER_SIZE) Integer containerSize,
+            @Header(PlexHeaders.TOKEN) String token);
+
+    @GET("library/sections/{sectionId}/recentlyAdded")
+    Call<MediaContainerResponse> getSectionRecentlyAdded(
+            @Path("sectionId") String sectionId,
+            @Header(PlexHeaders.CONTAINER_START) Integer containerStart,
+            @Header(PlexHeaders.CONTAINER_SIZE) Integer containerSize,
+            @Header(PlexHeaders.TOKEN) String token);
+
+    @GET("hubs/sections/{sectionId}")
+    Call<MediaContainerResponse> getSectionHubs(
+            @Path("sectionId") String sectionId,
+            @Header(PlexHeaders.TOKEN) String token);
+
     @GET("library/metadata/{ids}")
     Call<MediaContainerResponse> getMetadata(
             @Path("ids") String ids,

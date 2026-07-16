@@ -402,6 +402,70 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MediaContainerResponse" }
 
+  /library/sections/{sectionId}/onDeck:
+    get:
+      tags: [pms-library]
+      summary: Continue Watching for a section
+      description: "Code: PlexPmsApi.getSectionOnDeck (Plex Home Rows)."
+      operationId: getSectionOnDeck
+      parameters:
+        - $ref: "#/components/parameters/XPlexTokenHeader"
+        - $ref: "#/components/parameters/AcceptJson"
+        - $ref: "#/components/parameters/ContainerStart"
+        - $ref: "#/components/parameters/ContainerSize"
+        - name: sectionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: On Deck metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaContainerResponse" }
+
+  /library/sections/{sectionId}/recentlyAdded:
+    get:
+      tags: [pms-library]
+      summary: Recently added items in a section
+      description: "Code: PlexPmsApi.getSectionRecentlyAdded (Plex Home Rows)."
+      operationId: getSectionRecentlyAdded
+      parameters:
+        - $ref: "#/components/parameters/XPlexTokenHeader"
+        - $ref: "#/components/parameters/AcceptJson"
+        - $ref: "#/components/parameters/ContainerStart"
+        - $ref: "#/components/parameters/ContainerSize"
+        - name: sectionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Recently added metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaContainerResponse" }
+
+  /hubs/sections/{sectionId}:
+    get:
+      tags: [pms-library]
+      summary: Section hubs (recommendations and other shelves)
+      description: "Code: PlexPmsApi.getSectionHubs (Plex Home Rows)."
+      operationId: getSectionHubs
+      parameters:
+        - $ref: "#/components/parameters/XPlexTokenHeader"
+        - $ref: "#/components/parameters/AcceptJson"
+        - name: sectionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Hub list with nested Metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MediaContainerResponse" }
+
   /library/metadata/{ids}:
     get:
       tags: [pms-metadata]

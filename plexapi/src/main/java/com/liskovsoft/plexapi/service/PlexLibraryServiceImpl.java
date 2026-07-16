@@ -1,16 +1,20 @@
 package com.liskovsoft.plexapi.service;
 
+import com.liskovsoft.plexapi.library.PlexHubGroupImpl;
 import com.liskovsoft.plexapi.library.PlexLibraryImpl;
 import com.liskovsoft.plexapi.library.PlexMediaItemImpl;
 import com.liskovsoft.plexapi.library.PlexPage;
+import com.liskovsoft.plexapi.network.PlexDiscoverApi;
 import com.liskovsoft.plexapi.network.PlexPmsApi;
 import com.liskovsoft.plexapi.network.PlexRetrofitHelper;
 import com.liskovsoft.plexapi.network.dto.MediaContainer;
 import com.liskovsoft.plexapi.network.dto.MediaContainerResponse;
 import com.liskovsoft.plexapi.network.dto.PlexDirectory;
+import com.liskovsoft.plexapi.network.dto.PlexHub;
 import com.liskovsoft.plexapi.network.dto.PlexMetadata;
 import com.liskovsoft.plexapi.prefs.PlexPrefs;
 import com.liskovsoft.plexserviceinterfaces.PlexLibraryService;
+import com.liskovsoft.plexserviceinterfaces.data.PlexHubGroup;
 import com.liskovsoft.plexserviceinterfaces.data.PlexLibrary;
 import com.liskovsoft.plexserviceinterfaces.data.PlexMediaItem;
 import com.liskovsoft.plexserviceinterfaces.data.PlexMediaPage;
@@ -34,16 +38,23 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
 
     private final PlexPrefs mPrefs;
     private final PlexPmsApi mApi;
+    private final PlexDiscoverApi mDiscoverApi;
     private final int mPageSize;
 
     public PlexLibraryServiceImpl() {
-        this(null, null, DEFAULT_PAGE_SIZE);
+        this(null, null, null, DEFAULT_PAGE_SIZE);
     }
 
     /** Package-visible for tests. */
     PlexLibraryServiceImpl(PlexPrefs prefs, PlexPmsApi api, int pageSize) {
+        this(prefs, api, null, pageSize);
+    }
+
+    /** Package-visible for tests. */
+    PlexLibraryServiceImpl(PlexPrefs prefs, PlexPmsApi api, PlexDiscoverApi discoverApi, int pageSize) {
         mPrefs = prefs;
         mApi = api;
+        mDiscoverApi = discoverApi;
         mPageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
     }
 
@@ -84,6 +95,26 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
     @Override
     public Observable<PlexMediaPage> getChildrenPageObserve(PlexMediaItem parent, int offset) {
         return Observable.fromCallable(() -> fetchChildrenPage(parent, offset));
+    }
+
+    @Override
+    public Observable<PlexMediaPage> getOnDeckPageObserve(PlexLibrary library, int offset) {
+        return Observable.fromCallable(() -> fetchSectionShelfPage(library, "onDeck", offset));
+    }
+
+    @Override
+    public Observable<PlexMediaPage> getRecentlyAddedPageObserve(PlexLibrary library, int offset) {
+        return Observable.fromCallable(() -> fetchSectionShelfPage(library, "recentlyAdded", offset));
+    }
+
+    @Override
+    public Observable<List<PlexHubGroup>> getSectionHubsObserve(PlexLibrary library) {
+        return Observable.fromCallable(() -> fetchSectionHubs(library));
+    }
+
+    @Override
+    public Observable<PlexMediaPage> getWatchlistPageObserve(int type, int offset) {
+        return Observable.fromCallable(() -> fetchWatchlistPage(type, offset));
     }
 
     private List<PlexLibrary> fetchLibraries() throws IOException {
@@ -160,6 +191,96 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
         return new PlexPage(items, offset, totalSize);
     }
 
+    private PlexPage fetchSectionShelfPage(PlexLibrary library, String shelf, int offset)
+            throws IOException {
+        if (library == null || library.getKey() == null || library.getKey().isEmpty()) {
+            throw new IllegalArgumentException("library with key required");
+        }
+
+        PlexServer server = requireSelectedServer();
+        PlexPmsApi api = pmsApi(server);
+        String token = pmsToken(server);
+        String sectionId = sectionIdFromKey(library.getKey());
+
+        Response<MediaContainerResponse> response;
+        if ("onDeck".equals(shelf)) {
+            response = api.getSectionOnDeck(sectionId, offset, mPageSize, token).execute();
+        } else if ("recentlyAdded".equals(shelf)) {
+            response = api.getSectionRecentlyAdded(sectionId, offset, mPageSize, token).execute();
+        } else {
+            throw new IllegalArgumentException("Unknown shelf: " + shelf);
+        }
+
+        MediaContainer container = requireContainer(response,
+                "list " + shelf + " for section " + sectionId);
+        List<PlexMediaItem> items = mapMetadata(container, server, token);
+        int totalSize = resolveTotalSize(container, offset, items.size());
+        Log.d(TAG, "Listed " + shelf + " offset=" + offset + " size=" + items.size()
+                + " total=" + totalSize + " from section " + sectionId);
+        return new PlexPage(items, offset, totalSize);
+    }
+
+    private List<PlexHubGroup> fetchSectionHubs(PlexLibrary library) throws IOException {
+        if (library == null || library.getKey() == null || library.getKey().isEmpty()) {
+            throw new IllegalArgumentException("library with key required");
+        }
+
+        PlexServer server = requireSelectedServer();
+        PlexPmsApi api = pmsApi(server);
+        String token = pmsToken(server);
+        String sectionId = sectionIdFromKey(library.getKey());
+
+        Response<MediaContainerResponse> response = api.getSectionHubs(sectionId, token).execute();
+        MediaContainer container = requireContainer(response, "list hubs for section " + sectionId);
+
+        List<PlexHubGroup> hubs = new ArrayList<>();
+        for (PlexHub hub : container.getHubs()) {
+            List<PlexMediaItem> items = mapHubMetadata(hub, server, token);
+            hubs.add(new PlexHubGroupImpl(
+                    hub.getTitle(),
+                    hub.getHubIdentifier(),
+                    hub.getKey() != null ? hub.getKey() : hub.getHubKey(),
+                    items));
+        }
+        Log.d(TAG, "Listed " + hubs.size() + " hub(s) for section " + sectionId);
+        return hubs;
+    }
+
+    private PlexPage fetchWatchlistPage(int type, int offset) throws IOException {
+        String token = accountToken();
+        PlexDiscoverApi api = discoverApi();
+        PlexServer server = prefs().getSelectedServer();
+        String baseUrl = server != null ? server.getBaseUrl() : null;
+
+        Response<MediaContainerResponse> response =
+                api.getWatchlist(type, offset, mPageSize, token).execute();
+        MediaContainer container = requireContainer(response, "list Discover watchlist");
+
+        List<PlexMediaItem> items = new ArrayList<>();
+        for (PlexMetadata metadata : container.getMetadata()) {
+            PlexMediaItemImpl item = PlexMediaItemImpl.fromMetadata(metadata, baseUrl, token);
+            if (item != null) {
+                items.add(item);
+            }
+        }
+        int totalSize = resolveTotalSize(container, offset, items.size());
+        Log.d(TAG, "Listed watchlist type=" + type + " offset=" + offset
+                + " size=" + items.size() + " total=" + totalSize);
+        return new PlexPage(items, offset, totalSize);
+    }
+
+    private List<PlexMediaItem> mapHubMetadata(PlexHub hub, PlexServer server, String token) {
+        List<PlexMediaItem> items = new ArrayList<>();
+        for (PlexMetadata metadata : hub.getMetadata()) {
+            PlexMediaItemImpl item = PlexMediaItemImpl.fromMetadata(
+                    metadata, server.getBaseUrl(), token);
+            if (item != null) {
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
     private static int resolveTotalSize(MediaContainer container, int offset, int pageCount) {
         Integer totalSize = container.getTotalSize();
         if (totalSize != null && totalSize >= 0) {
@@ -197,6 +318,21 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
             return mApi;
         }
         return PlexRetrofitHelper.createPmsApi(server.getBaseUrl(), PlexPmsApi.class);
+    }
+
+    private PlexDiscoverApi discoverApi() {
+        if (mDiscoverApi != null) {
+            return mDiscoverApi;
+        }
+        return PlexRetrofitHelper.createDiscoverApi(PlexDiscoverApi.class);
+    }
+
+    private String accountToken() {
+        String accountToken = prefs().getAuthToken();
+        if (accountToken != null && !accountToken.isEmpty()) {
+            return accountToken;
+        }
+        throw new IllegalStateException("No Plex account token for Discover calls");
     }
 
     private String pmsToken(PlexServer server) {

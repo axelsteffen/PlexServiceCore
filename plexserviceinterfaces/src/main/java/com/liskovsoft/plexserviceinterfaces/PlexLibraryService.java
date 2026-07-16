@@ -1,5 +1,6 @@
 package com.liskovsoft.plexserviceinterfaces;
 
+import com.liskovsoft.plexserviceinterfaces.data.PlexHubGroup;
 import com.liskovsoft.plexserviceinterfaces.data.PlexLibrary;
 import com.liskovsoft.plexserviceinterfaces.data.PlexMediaItem;
 import com.liskovsoft.plexserviceinterfaces.data.PlexMediaPage;
@@ -27,4 +28,18 @@ public interface PlexLibraryService {
     Observable<PlexMediaPage> getShowsPageObserve(PlexLibrary library, int offset);
 
     Observable<PlexMediaPage> getChildrenPageObserve(PlexMediaItem parent, int offset);
+
+    /** Continue Watching for a library section. */
+    Observable<PlexMediaPage> getOnDeckPageObserve(PlexLibrary library, int offset);
+
+    /** Recently added items for a library section. */
+    Observable<PlexMediaPage> getRecentlyAddedPageObserve(PlexLibrary library, int offset);
+
+    /** Section hubs (Continue / Recently Added / recommendations, …). */
+    Observable<List<PlexHubGroup>> getSectionHubsObserve(PlexLibrary library);
+
+    /**
+     * Discover watchlist (official-app style), typically filtered to movies ({@code type=1}).
+     */
+    Observable<PlexMediaPage> getWatchlistPageObserve(int type, int offset);
 }
