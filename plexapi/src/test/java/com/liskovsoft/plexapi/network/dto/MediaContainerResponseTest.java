@@ -88,4 +88,40 @@ public class MediaContainerResponseTest {
         assertEquals("server-token", resource.getAccessToken());
         assertEquals("https://10.0.0.5:32400", resource.getConnections().get(0).getUri());
     }
+
+    @Test
+    public void parsesDiscoverWatchlistSectionIdAsString() {
+        // Discover returns librarySectionID: "watchlist" (not a numeric PMS section id).
+        String json = "{"
+                + "\"MediaContainer\":{"
+                + "\"size\":1,"
+                + "\"librarySectionID\":\"watchlist\","
+                + "\"librarySectionTitle\":\"Watchlist\","
+                + "\"Metadata\":[{"
+                + "\"ratingKey\":\"42\","
+                + "\"key\":\"/library/metadata/42\","
+                + "\"type\":\"movie\","
+                + "\"title\":\"Example\""
+                + "}]"
+                + "}}";
+
+        MediaContainerResponse response = mGson.fromJson(json, MediaContainerResponse.class);
+        assertNotNull(response.getMediaContainer());
+        assertEquals("watchlist", response.getMediaContainer().getLibrarySectionId());
+        assertEquals("Watchlist", response.getMediaContainer().getLibrarySectionTitle());
+        assertEquals(1, response.getMediaContainer().getMetadata().size());
+        assertEquals("Example", response.getMediaContainer().getMetadata().get(0).getTitle());
+    }
+
+    @Test
+    public void parsesNumericLibrarySectionIdAsString() {
+        String json = "{"
+                + "\"MediaContainer\":{"
+                + "\"librarySectionID\":3,"
+                + "\"Metadata\":[]"
+                + "}}";
+
+        MediaContainerResponse response = mGson.fromJson(json, MediaContainerResponse.class);
+        assertEquals("3", response.getMediaContainer().getLibrarySectionId());
+    }
 }
