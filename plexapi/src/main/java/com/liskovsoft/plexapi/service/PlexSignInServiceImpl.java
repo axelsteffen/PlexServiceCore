@@ -8,10 +8,12 @@ import com.liskovsoft.plexapi.prefs.PlexPrefs;
 import com.liskovsoft.plexserviceinterfaces.PlexSignInService;
 import com.liskovsoft.plexserviceinterfaces.data.PlexAuthPin;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.sharedutils.rx.RxHelper;
 
 import java.io.IOException;
 
 import io.reactivex.Observable;
+import okhttp3.ResponseBody;
 import retrofit2.Response;
 
 /**
@@ -68,12 +70,13 @@ public class PlexSignInServiceImpl implements PlexSignInService {
 
     @Override
     public Observable<PlexAuthPin> signInWithPinObserve() {
-        return Observable.create(emitter -> {
+        // createLong: IO + mainThread observe (avoids NetworkOnMainThreadException).
+        // strong=false → short 4-char code for https://plex.tv/link
+        return RxHelper.createLong(emitter -> {
             try {
-                Response<PlexPinResponse> createResponse = mApi.createPin(true).execute();
+                Response<PlexPinResponse> createResponse = mApi.createPin(false).execute();
                 if (!createResponse.isSuccessful() || createResponse.body() == null) {
-                    emitter.onError(new IOException("Failed to create Plex PIN: HTTP "
-                            + createResponse.code()));
+                    emitter.onError(new IOException(formatCreatePinFailure(createResponse)));
                     return;
                 }
 
@@ -102,12 +105,30 @@ public class PlexSignInServiceImpl implements PlexSignInService {
                 setAuthToken(token);
                 Log.d(TAG, "PIN claimed; auth token stored");
                 emitter.onComplete();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             } catch (Throwable e) {
                 if (!emitter.isDisposed()) {
                     emitter.onError(e);
                 }
             }
         });
+    }
+
+    private static String formatCreatePinFailure(Response<PlexPinResponse> response) {
+        String body = null;
+        ResponseBody errorBody = response.errorBody();
+        if (errorBody != null) {
+            try {
+                body = errorBody.string();
+            } catch (IOException ignored) {
+                body = null;
+            }
+        }
+        if (body != null && !body.isEmpty()) {
+            return "Failed to create Plex PIN: HTTP " + response.code() + " " + body;
+        }
+        return "Failed to create Plex PIN: HTTP " + response.code();
     }
 
     private String pollForAuthToken(String pinId, io.reactivex.ObservableEmitter<PlexAuthPin> emitter)

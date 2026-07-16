@@ -16,6 +16,9 @@ import org.robolectric.RuntimeEnvironment;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.reactivex.android.plugins.RxAndroidPlugins;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -34,6 +37,11 @@ public class PlexSignInServiceImplTest {
 
     @Before
     public void setUp() throws Exception {
+        // RxHelper.createLong uses newThread + Android main; trampoline keeps tests synchronous.
+        RxJavaPlugins.setNewThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+        RxAndroidPlugins.setInitMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+        RxAndroidPlugins.setMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+
         PlexPrefs.unhold();
         PlexRetrofitHelper.reset();
 
@@ -53,6 +61,8 @@ public class PlexSignInServiceImplTest {
         mServer.shutdown();
         PlexPrefs.unhold();
         PlexRetrofitHelper.reset();
+        RxJavaPlugins.reset();
+        RxAndroidPlugins.reset();
     }
 
     @Test
