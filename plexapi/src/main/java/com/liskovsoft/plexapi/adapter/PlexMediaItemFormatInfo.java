@@ -188,10 +188,8 @@ public final class PlexMediaItemFormatInfo implements MediaItemFormatInfo {
         return null;
     }
 
-    @Override
-    public String getCategory() {
-        return null;
-    }
+    // getCategory() omitted: MediaItemFormatInfo in upstream SmartTube APK has no category field
+    // (fork MSC addition). Keep adapters compatible with apk2maven artifact.
 
     @Override
     public boolean isLive() {
