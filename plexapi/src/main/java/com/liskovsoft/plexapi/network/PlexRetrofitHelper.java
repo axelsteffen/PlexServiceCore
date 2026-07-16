@@ -11,8 +11,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
  */
 public final class PlexRetrofitHelper {
     public static final String DEFAULT_PLEX_TV_BASE_URL = "https://plex.tv/";
+    public static final String DEFAULT_DISCOVER_BASE_URL = "https://discover.provider.plex.tv/";
 
     private static String sPlexTvBaseUrl = DEFAULT_PLEX_TV_BASE_URL;
+    private static String sDiscoverBaseUrl = DEFAULT_DISCOVER_BASE_URL;
     private static OkHttpClient sClient;
 
     private PlexRetrofitHelper() {
@@ -24,13 +26,24 @@ public final class PlexRetrofitHelper {
         sClient = null;
     }
 
+    /** Override Discover base URL (MockWebServer). */
+    public static synchronized void setDiscoverBaseUrl(String baseUrl) {
+        sDiscoverBaseUrl = baseUrl != null ? baseUrl : DEFAULT_DISCOVER_BASE_URL;
+        sClient = null;
+    }
+
     public static synchronized void reset() {
         sPlexTvBaseUrl = DEFAULT_PLEX_TV_BASE_URL;
+        sDiscoverBaseUrl = DEFAULT_DISCOVER_BASE_URL;
         sClient = null;
     }
 
     public static <T> T createPlexTvApi(Class<T> clazz) {
         return buildRetrofit(sPlexTvBaseUrl).create(clazz);
+    }
+
+    public static <T> T createDiscoverApi(Class<T> clazz) {
+        return buildRetrofit(sDiscoverBaseUrl).create(clazz);
     }
 
     /**

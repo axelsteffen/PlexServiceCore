@@ -157,6 +157,41 @@ public class PlexMediaGroupAdapterTest {
         assertNotNull(((PlexMediaGroupAdapter) group).getPlexContainer());
     }
 
+    @Test
+    public void fromSimple_hasNoBrowseStubAndCustomTitle() {
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+        List<PlexMediaItem> items = Collections.singletonList(movie("10", "Alpha"));
+
+        PlexMediaGroupAdapter group = PlexMediaGroupAdapter.fromSimple(
+                "Continue Watching",
+                PlexMediaGroupAdapter.Kind.ON_DECK,
+                library,
+                items,
+                new PlexPage(items, 0, 1));
+
+        assertNotNull(group);
+        assertEquals("Continue Watching", group.getTitle());
+        assertEquals(PlexMediaGroupAdapter.Kind.ON_DECK, group.getKind());
+        assertEquals(1, group.getMediaItems().size());
+        assertEquals("10", group.getMediaItems().get(0).getVideoId());
+        assertNull(group.getMediaItems().get(0).getReloadPageKey());
+    }
+
+    @Test
+    public void fromRecommended_hasBrowseStubThenItems() {
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+        List<PlexMediaItem> items = Collections.singletonList(movie("10", "Alpha"));
+
+        MediaGroup group = PlexMediaGroupAdapter.fromRecommended(
+                library, "Movies", items, null);
+
+        assertNotNull(group);
+        assertEquals("Movies", group.getTitle());
+        assertEquals(2, group.getMediaItems().size());
+        assertNotNull(group.getMediaItems().get(0).getReloadPageKey());
+        assertEquals("10", group.getMediaItems().get(1).getVideoId());
+    }
+
     private static PlexMediaItem movie(String ratingKey, String title) {
         return new PlexMediaItemImpl(
                 ratingKey, "/library/metadata/" + ratingKey, title, "movie", 0, null, 2020);

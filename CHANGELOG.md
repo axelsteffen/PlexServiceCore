@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- PMS: `library/sections/{id}/onDeck`, `recentlyAdded`, `hubs/sections/{id}` (+ `PlexHub` DTO / `PlexHubGroup`).
+- Discover: `PlexDiscoverApi` watchlist (`discover.provider.plex.tv`) via `getWatchlistPageObserve`.
+- `PlexMediaGroupAdapter`: `Kind`, `fromSimple`, `fromRecommended` (browse stub without `/all` items).
+- `PlexLibraryService`: `getOnDeckPageObserve`, `getRecentlyAddedPageObserve`, `getSectionHubsObserve`, `getWatchlistPageObserve`.
+
 ### Fixed
 
 - **PlexMediaItemAdapter.isMovie**: Always `false`. SmartTube `Video.isEmpty()` treats `isMovie` as YouTube "Free with Ads" and drops cards; Plex movies are normal `TYPE_VIDEO` items.

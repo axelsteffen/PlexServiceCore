@@ -2,8 +2,10 @@ package com.liskovsoft.plexapi.adapter;
 
 import android.media.Rating;
 
+import android.os.Build;
 import androidx.annotation.Nullable;
 
+import androidx.annotation.RequiresApi;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.plexapi.library.PlexMediaItemImpl;
 import com.liskovsoft.plexserviceinterfaces.data.PlexBackedMediaItem;
@@ -248,6 +250,7 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
         return "$0.00";
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     public int getRatingStyle() {
         return Rating.RATING_5_STARS;

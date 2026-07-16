@@ -51,6 +51,9 @@ public class MediaContainer {
     @SerializedName("Metadata")
     private List<PlexMetadata> mMetadata;
 
+    @SerializedName("Hub")
+    private List<PlexHub> mHubs;
+
     public Integer getSize() {
         return mSize;
     }
@@ -105,5 +108,9 @@ public class MediaContainer {
 
     public List<PlexMetadata> getMetadata() {
         return mMetadata != null ? mMetadata : Collections.emptyList();
+    }
+
+    public List<PlexHub> getHubs() {
+        return mHubs != null ? mHubs : Collections.emptyList();
     }
 }
