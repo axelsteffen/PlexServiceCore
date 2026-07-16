@@ -15,6 +15,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **MediaContainer.librarySectionID**: `String` instead of `Integer` — Discover watchlist returns `"watchlist"`, which broke Gson (`NumberFormatException`).
 - **PlexMediaItemAdapter.isMovie**: Always `false`. SmartTube `Video.isEmpty()` treats `isMovie` as YouTube "Free with Ads" and drops cards; Plex movies are normal `TYPE_VIDEO` items.
 - **PlexMediaItemAdapter.getDurationMs**: Returns `0` for show/season/library stubs so SmartTube `Video.isMembersOnly()` does not drop TV show cards.
 - **PlexSignInServiceImpl**: PIN flow via `RxHelper.createLong` (background thread; avoids `NetworkOnMainThreadException` with null message).

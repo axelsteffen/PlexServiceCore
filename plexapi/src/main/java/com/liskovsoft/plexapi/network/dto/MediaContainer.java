@@ -33,8 +33,11 @@ public class MediaContainer {
     @SerializedName("identifier")
     private String mIdentifier;
 
+    /**
+     * PMS uses numeric section ids; Discover watchlist returns the string {@code "watchlist"}.
+     */
     @SerializedName("librarySectionID")
-    private Integer mLibrarySectionId;
+    private String mLibrarySectionId;
 
     @SerializedName("librarySectionTitle")
     private String mLibrarySectionTitle;
@@ -86,7 +89,7 @@ public class MediaContainer {
         return mIdentifier;
     }
 
-    public Integer getLibrarySectionId() {
+    public String getLibrarySectionId() {
         return mLibrarySectionId;
     }
 
