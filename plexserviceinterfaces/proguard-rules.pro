@@ -1,2 +1,2 @@
 # Keep Plex service interfaces
--keep interface com.liskovsoft.plexserviceinterfaces.** { *; }
+-keep interface de.developerleipzig.plexserviceinterfaces.** { *; }

@@ -1,0 +1,160 @@
+package de.developerleipzig.plexapi.service;
+
+import de.developerleipzig.plexapi.auth.PlexAuthPinImpl;
+import de.developerleipzig.plexapi.auth.PlexPinResponse;
+import de.developerleipzig.plexapi.network.PlexRetrofitHelper;
+import de.developerleipzig.plexapi.network.PlexTvApi;
+import de.developerleipzig.plexapi.prefs.PlexPrefs;
+import de.developerleipzig.plexserviceinterfaces.PlexSignInService;
+import de.developerleipzig.plexserviceinterfaces.data.PlexAuthPin;
+import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.sharedutils.rx.RxHelper;
+
+import java.io.IOException;
+
+import io.reactivex.Observable;
+import okhttp3.ResponseBody;
+import retrofit2.Response;
+
+/**
+ * Plex PIN auth against plex.tv; token persisted in {@link PlexPrefs}.
+ */
+public class PlexSignInServiceImpl implements PlexSignInService {
+    private static final String TAG = PlexSignInServiceImpl.class.getSimpleName();
+    static final int DEFAULT_PIN_POLL_ATTEMPTS = 150;
+    static final long DEFAULT_PIN_POLL_INTERVAL_MS = 2_000;
+
+    private final PlexTvApi mApi;
+    private final PlexPrefs mPrefs;
+    private final int mPollAttempts;
+    private final long mPollIntervalMs;
+
+    public PlexSignInServiceImpl() {
+        this(PlexRetrofitHelper.createPlexTvApi(PlexTvApi.class), null,
+                DEFAULT_PIN_POLL_ATTEMPTS, DEFAULT_PIN_POLL_INTERVAL_MS);
+    }
+
+    /** Package-visible for tests. */
+    PlexSignInServiceImpl(PlexTvApi api, PlexPrefs prefs, int pollAttempts, long pollIntervalMs) {
+        mApi = api;
+        mPrefs = prefs;
+        mPollAttempts = pollAttempts;
+        mPollIntervalMs = pollIntervalMs;
+    }
+
+    private PlexPrefs prefs() {
+        return mPrefs != null ? mPrefs : PlexPrefs.instance();
+    }
+
+    @Override
+    public boolean isSigned() {
+        String token = getAuthToken();
+        return token != null && !token.isEmpty();
+    }
+
+    @Override
+    public String getAuthToken() {
+        return prefs().getAuthToken();
+    }
+
+    @Override
+    public void setAuthToken(String token) {
+        prefs().setAuthToken(token);
+    }
+
+    @Override
+    public void signOut() {
+        prefs().clearAuthToken();
+        prefs().clearSelectedServer();
+    }
+
+    @Override
+    public Observable<PlexAuthPin> signInWithPinObserve() {
+        // createLong: IO + mainThread observe (avoids NetworkOnMainThreadException).
+        // strong=false → short 4-char code for https://plex.tv/link
+        return RxHelper.createLong(emitter -> {
+            try {
+                Response<PlexPinResponse> createResponse = mApi.createPin(false).execute();
+                if (!createResponse.isSuccessful() || createResponse.body() == null) {
+                    emitter.onError(new IOException(formatCreatePinFailure(createResponse)));
+                    return;
+                }
+
+                PlexPinResponse created = createResponse.body();
+                if (created.getCode() == null || created.getCode().isEmpty()) {
+                    emitter.onError(new IllegalStateException("Plex PIN response missing code"));
+                    return;
+                }
+
+                String pinId = String.valueOf(created.getId());
+                PlexAuthPin pin = new PlexAuthPinImpl(pinId, created.getCode());
+                Log.d(TAG, "PIN created: code=" + created.getCode() + " id=" + pinId);
+                emitter.onNext(pin);
+
+                String token = pollForAuthToken(pinId, emitter);
+                if (emitter.isDisposed()) {
+                    return;
+                }
+
+                if (token == null || token.isEmpty()) {
+                    emitter.onError(new IllegalStateException(
+                            "Plex PIN expired or was not claimed within the timeout"));
+                    return;
+                }
+
+                setAuthToken(token);
+                Log.d(TAG, "PIN claimed; auth token stored");
+                emitter.onComplete();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Throwable e) {
+                if (!emitter.isDisposed()) {
+                    emitter.onError(e);
+                }
+            }
+        });
+    }
+
+    private static String formatCreatePinFailure(Response<PlexPinResponse> response) {
+        String body = null;
+        ResponseBody errorBody = response.errorBody();
+        if (errorBody != null) {
+            try {
+                body = errorBody.string();
+            } catch (IOException ignored) {
+                body = null;
+            }
+        }
+        if (body != null && !body.isEmpty()) {
+            return "Failed to create Plex PIN: HTTP " + response.code() + " " + body;
+        }
+        return "Failed to create Plex PIN: HTTP " + response.code();
+    }
+
+    private String pollForAuthToken(String pinId, io.reactivex.ObservableEmitter<PlexAuthPin> emitter)
+            throws InterruptedException, IOException {
+        for (int i = 0; i < mPollAttempts; i++) {
+            if (emitter.isDisposed()) {
+                return null;
+            }
+
+            Thread.sleep(mPollIntervalMs);
+
+            if (emitter.isDisposed()) {
+                return null;
+            }
+
+            Response<PlexPinResponse> pollResponse = mApi.checkPin(pinId).execute();
+            if (!pollResponse.isSuccessful() || pollResponse.body() == null) {
+                Log.d(TAG, "PIN poll HTTP " + pollResponse.code() + " (attempt " + (i + 1) + ")");
+                continue;
+            }
+
+            PlexPinResponse body = pollResponse.body();
+            if (body.hasAuthToken()) {
+                return body.getAuthToken();
+            }
+        }
+        return null;
+    }
+}

@@ -26,7 +26,7 @@ Standalone builds expect sibling (or nested) `SharedModules` and `MediaServiceCo
 
 ## Package
 
-`com.liskovsoft.plexapi` / `com.liskovsoft.plexserviceinterfaces` — unchanged from the in-tree modules.
+`de.developerleipzig.plexapi` / `de.developerleipzig.plexserviceinterfaces` — unchanged from the in-tree modules.
 
 ## Changelog
 
