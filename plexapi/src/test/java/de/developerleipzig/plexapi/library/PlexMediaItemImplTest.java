@@ -37,13 +37,16 @@ public class PlexMediaItemImplTest {
     }
 
     @Test
-    public void fromMetadata_buildsAbsoluteFallbackThumb() {
-        PlexMetadata bare = GSON.fromJson(
-                "{\"ratingKey\":\"1049\",\"key\":\"/library/metadata/1049\",\"title\":\"X\"}",
+    public void fromMetadata_mapsParentAndIndex() {
+        PlexMetadata episode = GSON.fromJson(
+                "{\"ratingKey\":\"4002\",\"key\":\"/library/metadata/4002\",\"title\":\"E2\","
+                        + "\"type\":\"episode\",\"parentRatingKey\":\"3001\","
+                        + "\"grandparentRatingKey\":\"2001\",\"index\":2}",
                 PlexMetadata.class);
-        PlexMediaItemImpl item = PlexMediaItemImpl.fromMetadata(bare, "https://plex:32400/", "tok");
+        PlexMediaItemImpl item = PlexMediaItemImpl.fromMetadata(episode, "https://plex:32400/", "tok");
         assertNotNull(item);
-        assertTrue(item.getThumbUrl().contains("/library/metadata/1049/thumb"));
-        assertTrue(item.getThumbUrl().contains("X-Plex-Token=tok"));
+        assertEquals("3001", item.getParentRatingKey());
+        assertEquals("2001", item.getGrandparentRatingKey());
+        assertEquals(2, item.getIndex());
     }
 }

@@ -47,6 +47,18 @@ public class PlexMetadata {
     @SerializedName("grandparentThumb")
     private String mGrandparentThumb;
 
+    /** Episode → season; season → show. */
+    @SerializedName("parentRatingKey")
+    private String mParentRatingKey;
+
+    /** Episode → show. */
+    @SerializedName("grandparentRatingKey")
+    private String mGrandparentRatingKey;
+
+    /** Episode number within season, or season number within show. */
+    @SerializedName("index")
+    private int mIndex;
+
     @SerializedName("Media")
     private List<PlexMedia> mMedia;
 
@@ -96,6 +108,18 @@ public class PlexMetadata {
 
     public String getGrandparentThumb() {
         return mGrandparentThumb;
+    }
+
+    public String getParentRatingKey() {
+        return mParentRatingKey;
+    }
+
+    public String getGrandparentRatingKey() {
+        return mGrandparentRatingKey;
+    }
+
+    public int getIndex() {
+        return mIndex;
     }
 
     public List<PlexMedia> getMedia() {
