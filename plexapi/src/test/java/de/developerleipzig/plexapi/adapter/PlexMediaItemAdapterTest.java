@@ -96,6 +96,32 @@ public class PlexMediaItemAdapterTest {
     }
 
     @Test
+    public void from_episode_usesShowNameAsTitle() {
+        PlexMediaItem plex = new PlexMediaItemImpl(
+                "4001", "/library/metadata/4001", "Pilot", "episode", 3_600_000L, null, 2008,
+                0L, "3001", "2001", 1, "Season 1", "Breaking Bad", 1);
+
+        MediaItem item = PlexMediaItemAdapter.from(plex);
+
+        assertNotNull(item);
+        assertEquals("Breaking Bad", item.getTitle());
+        assertEquals("S01E01 Pilot · 2008", item.getSecondTitle());
+    }
+
+    @Test
+    public void from_season_usesShowNameAsTitle() {
+        PlexMediaItem plex = new PlexMediaItemImpl(
+                "3001", "/library/metadata/3001", "Season 1", "season", 0L, null, 2008,
+                0L, "2001", "2001", 1, "Breaking Bad", "Breaking Bad", 0);
+
+        MediaItem item = PlexMediaItemAdapter.from(plex);
+
+        assertNotNull(item);
+        assertEquals("Breaking Bad", item.getTitle());
+        assertEquals("Season 1 · 2008", item.getSecondTitle());
+    }
+
+    @Test
     public void from_nonMovie_isMovieFalse() {
         PlexMediaItem plex = new PlexMediaItemImpl(
                 "9", "/library/metadata/9", "Episode", "episode", 0, null, 0);

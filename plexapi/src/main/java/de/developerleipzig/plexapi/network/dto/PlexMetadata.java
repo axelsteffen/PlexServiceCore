@@ -21,6 +21,14 @@ public class PlexMetadata {
     @SerializedName("title")
     private String mTitle;
 
+    /** Episode → show title; season → show title. */
+    @SerializedName("grandparentTitle")
+    private String mGrandparentTitle;
+
+    /** Episode → season title; season → show title. */
+    @SerializedName("parentTitle")
+    private String mParentTitle;
+
     @SerializedName("summary")
     private String mSummary;
 
@@ -59,6 +67,10 @@ public class PlexMetadata {
     @SerializedName("index")
     private int mIndex;
 
+    /** Episode → season number (PMS {@code parentIndex}). */
+    @SerializedName("parentIndex")
+    private int mParentIndex;
+
     @SerializedName("Media")
     private List<PlexMedia> mMedia;
 
@@ -76,6 +88,14 @@ public class PlexMetadata {
 
     public String getTitle() {
         return mTitle;
+    }
+
+    public String getGrandparentTitle() {
+        return mGrandparentTitle;
+    }
+
+    public String getParentTitle() {
+        return mParentTitle;
     }
 
     public String getSummary() {
@@ -120,6 +140,10 @@ public class PlexMetadata {
 
     public int getIndex() {
         return mIndex;
+    }
+
+    public int getParentIndex() {
+        return mParentIndex;
     }
 
     public List<PlexMedia> getMedia() {

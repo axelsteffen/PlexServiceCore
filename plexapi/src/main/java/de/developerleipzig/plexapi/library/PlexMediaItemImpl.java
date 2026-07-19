@@ -19,20 +19,33 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
     private final String mParentRatingKey;
     private final String mGrandparentRatingKey;
     private final int mIndex;
+    private final String mParentTitle;
+    private final String mGrandparentTitle;
+    private final int mParentIndex;
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year) {
-        this(ratingKey, key, title, type, durationMs, thumbUrl, year, 0L, null, null, 0);
+        this(ratingKey, key, title, type, durationMs, thumbUrl, year, 0L, null, null, 0,
+                null, null, 0);
     }
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year, long viewOffsetMs) {
-        this(ratingKey, key, title, type, durationMs, thumbUrl, year, viewOffsetMs, null, null, 0);
+        this(ratingKey, key, title, type, durationMs, thumbUrl, year, viewOffsetMs, null, null, 0,
+                null, null, 0);
     }
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year, long viewOffsetMs,
                              String parentRatingKey, String grandparentRatingKey, int index) {
+        this(ratingKey, key, title, type, durationMs, thumbUrl, year, viewOffsetMs,
+                parentRatingKey, grandparentRatingKey, index, null, null, 0);
+    }
+
+    public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
+                             long durationMs, String thumbUrl, int year, long viewOffsetMs,
+                             String parentRatingKey, String grandparentRatingKey, int index,
+                             String parentTitle, String grandparentTitle, int parentIndex) {
         mRatingKey = ratingKey;
         mKey = key;
         mTitle = title;
@@ -44,6 +57,9 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
         mParentRatingKey = parentRatingKey;
         mGrandparentRatingKey = grandparentRatingKey;
         mIndex = Math.max(0, index);
+        mParentTitle = parentTitle;
+        mGrandparentTitle = grandparentTitle;
+        mParentIndex = Math.max(0, parentIndex);
     }
 
     public static PlexMediaItemImpl fromMetadata(PlexMetadata metadata, String baseUrl, String token) {
@@ -62,7 +78,10 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
                 metadata.getViewOffset(),
                 metadata.getParentRatingKey(),
                 metadata.getGrandparentRatingKey(),
-                metadata.getIndex());
+                metadata.getIndex(),
+                metadata.getParentTitle(),
+                metadata.getGrandparentTitle(),
+                metadata.getParentIndex());
     }
 
     /**
@@ -146,5 +165,20 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
     @Override
     public int getIndex() {
         return mIndex;
+    }
+
+    @Override
+    public String getGrandparentTitle() {
+        return mGrandparentTitle;
+    }
+
+    @Override
+    public String getParentTitle() {
+        return mParentTitle;
+    }
+
+    @Override
+    public int getParentIndex() {
+        return mParentIndex;
     }
 }
