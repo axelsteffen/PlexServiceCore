@@ -61,13 +61,26 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
      */
     @Nullable
     public static PlexMediaItemAdapter fromLibraryBrowse(@Nullable PlexLibrary library) {
+        return fromLibraryBrowse(library, null);
+    }
+
+    /**
+     * @param displayTitle when non-empty, overrides {@link PlexLibrary#getTitle()} on the stub card
+     *                     (e.g. "Alle Filme").
+     */
+    @Nullable
+    public static PlexMediaItemAdapter fromLibraryBrowse(@Nullable PlexLibrary library,
+                                                         @Nullable String displayTitle) {
         if (library == null || library.getKey() == null || library.getKey().isEmpty()) {
             return null;
         }
+        String title = displayTitle != null && !displayTitle.isEmpty()
+                ? displayTitle
+                : library.getTitle();
         PlexMediaItem stub = new PlexMediaItemImpl(
                 library.getKey(),
                 library.getKey(),
-                library.getTitle(),
+                title,
                 TYPE_LIBRARY,
                 0L,
                 null,

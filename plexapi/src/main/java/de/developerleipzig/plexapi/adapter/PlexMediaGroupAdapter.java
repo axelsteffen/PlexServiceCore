@@ -118,6 +118,29 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
     }
 
     /**
+     * Single browse-stub row (e.g. "Alle Filme" / "Alle TV-Shows").
+     */
+    @Nullable
+    public static PlexMediaGroupAdapter fromBrowseCard(@Nullable PlexLibrary library,
+                                                       @Nullable String rowTitle,
+                                                       @Nullable String cardTitle) {
+        if (library == null || library.getKey() == null || library.getKey().isEmpty()) {
+            return null;
+        }
+        if (rowTitle == null || rowTitle.isEmpty()) {
+            return null;
+        }
+        MediaItem browseStub = PlexMediaItemAdapter.fromLibraryBrowse(library, cardTitle);
+        if (browseStub == null) {
+            return null;
+        }
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        mediaItems.add(browseStub);
+        return new PlexMediaGroupAdapter(
+                Kind.HUB_RECOMMENDED, library, null, rowTitle, 0, mediaItems, null);
+    }
+
+    /**
      * Titled shelf without browse stub (Continue Watching, Recently Added, Watchlist).
      */
     @Nullable
