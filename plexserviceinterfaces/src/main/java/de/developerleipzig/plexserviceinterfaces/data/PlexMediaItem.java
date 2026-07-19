@@ -26,4 +26,13 @@ public interface PlexMediaItem {
 
     /** Episode or season index within parent (PMS {@code index}); 0 if unknown. */
     int getIndex();
+
+    /** Show title for episodes/seasons (PMS {@code grandparentTitle}); null otherwise. */
+    String getGrandparentTitle();
+
+    /** Parent title (season title for episodes, show title for seasons); null otherwise. */
+    String getParentTitle();
+
+    /** Season number for episodes (PMS {@code parentIndex}); 0 if unknown. */
+    int getParentIndex();
 }

@@ -23,8 +23,10 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
     private static final String TYPE_MOVIE = "movie";
     private static final String TYPE_SHOW = "show";
     private static final String TYPE_SEASON = "season";
+    private static final String TYPE_EPISODE = "episode";
     /** Opens full library grid via {@link #getReloadPageKey()} (Phase 3.4). */
     private static final String TYPE_LIBRARY = "library";
+    private static final String TITLE_SEP = " · ";
 
     /**
      * Wrapped APK package id (upstream SmartTube). App-module {@code R.drawable} is not merged.
@@ -180,13 +182,93 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
 
     @Override
     public String getTitle() {
+        // Episode/season cards: show the TV show name as the primary line.
+        if (isEpisode()) {
+            String show = nonEmpty(mItem.getGrandparentTitle());
+            if (show != null) {
+                return show;
+            }
+        } else if (isSeason()) {
+            String show = firstNonEmpty(mItem.getParentTitle(), mItem.getGrandparentTitle());
+            if (show != null) {
+                return show;
+            }
+        }
         return mItem.getTitle();
     }
 
     @Override
     public CharSequence getSecondTitle() {
+        if (isEpisode()) {
+            return episodeSecondTitle();
+        }
+        if (isSeason()) {
+            return joinTitles(mItem.getTitle(), yearText());
+        }
+        return yearText();
+    }
+
+    @Nullable
+    private CharSequence episodeSecondTitle() {
+        String code = episodeCode();
+        String episodeTitle = nonEmpty(mItem.getTitle());
+        String year = yearText();
+        if (code != null && episodeTitle != null) {
+            return joinTitles(code + " " + episodeTitle, year);
+        }
+        if (episodeTitle != null) {
+            return joinTitles(episodeTitle, year);
+        }
+        if (code != null) {
+            return joinTitles(code, year);
+        }
+        return year;
+    }
+
+    @Nullable
+    private String episodeCode() {
+        int season = mItem.getParentIndex();
+        int episode = mItem.getIndex();
+        if (season <= 0 || episode <= 0) {
+            return null;
+        }
+        return String.format("S%02dE%02d", season, episode);
+    }
+
+    @Nullable
+    private String yearText() {
         int year = mItem.getYear();
         return year > 0 ? String.valueOf(year) : null;
+    }
+
+    @Nullable
+    private static String joinTitles(@Nullable String left, @Nullable String right) {
+        if (left == null || left.isEmpty()) {
+            return right;
+        }
+        if (right == null || right.isEmpty()) {
+            return left;
+        }
+        return left + TITLE_SEP + right;
+    }
+
+    @Nullable
+    private static String nonEmpty(@Nullable String value) {
+        return value != null && !value.isEmpty() ? value : null;
+    }
+
+    @Nullable
+    private static String firstNonEmpty(@Nullable String first, @Nullable String second) {
+        String a = nonEmpty(first);
+        return a != null ? a : nonEmpty(second);
+    }
+
+    private boolean isEpisode() {
+        return TYPE_EPISODE.equalsIgnoreCase(mItem.getType());
+    }
+
+    private boolean isSeason() {
+        return TYPE_SEASON.equalsIgnoreCase(mItem.getType());
     }
 
     @Override

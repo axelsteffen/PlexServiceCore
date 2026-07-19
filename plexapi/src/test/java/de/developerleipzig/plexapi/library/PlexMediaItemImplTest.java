@@ -41,12 +41,17 @@ public class PlexMediaItemImplTest {
         PlexMetadata episode = GSON.fromJson(
                 "{\"ratingKey\":\"4002\",\"key\":\"/library/metadata/4002\",\"title\":\"E2\","
                         + "\"type\":\"episode\",\"parentRatingKey\":\"3001\","
-                        + "\"grandparentRatingKey\":\"2001\",\"index\":2}",
+                        + "\"grandparentRatingKey\":\"2001\",\"index\":2,"
+                        + "\"parentIndex\":1,\"parentTitle\":\"Season 1\","
+                        + "\"grandparentTitle\":\"Breaking Bad\"}",
                 PlexMetadata.class);
         PlexMediaItemImpl item = PlexMediaItemImpl.fromMetadata(episode, "https://plex:32400/", "tok");
         assertNotNull(item);
         assertEquals("3001", item.getParentRatingKey());
         assertEquals("2001", item.getGrandparentRatingKey());
         assertEquals(2, item.getIndex());
+        assertEquals(1, item.getParentIndex());
+        assertEquals("Season 1", item.getParentTitle());
+        assertEquals("Breaking Bad", item.getGrandparentTitle());
     }
 }
