@@ -22,6 +22,9 @@ public interface PlexLibraryService {
     /** Show → seasons, season → episodes (Phase 3.3). */
     Observable<List<PlexMediaItem>> getChildrenObserve(PlexMediaItem parent);
 
+    /** Single metadata item by ratingKey (refresh parent keys / type). */
+    Observable<PlexMediaItem> getItemObserve(String ratingKey);
+
     /** Paginated section browse (Phase 3.4). {@code offset} is PMS container start. */
     Observable<PlexMediaPage> getMoviesPageObserve(PlexLibrary library, int offset);
 
