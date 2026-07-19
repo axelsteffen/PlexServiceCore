@@ -83,6 +83,11 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
     }
 
     @Override
+    public Observable<PlexMediaItem> getItemObserve(String ratingKey) {
+        return Observable.fromCallable(() -> fetchItem(ratingKey));
+    }
+
+    @Override
     public Observable<PlexMediaPage> getMoviesPageObserve(PlexLibrary library, int offset) {
         return Observable.fromCallable(() -> fetchSectionPage(library, PlexPmsApi.TYPE_MOVIE, "movie", offset));
     }
@@ -168,6 +173,24 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
     private List<PlexMediaItem> fetchChildren(PlexMediaItem parent) throws IOException {
         PlexPage page = fetchChildrenPage(parent, 0);
         return page.getItems();
+    }
+
+    private PlexMediaItem fetchItem(String ratingKey) throws IOException {
+        if (ratingKey == null || ratingKey.isEmpty()) {
+            throw new IllegalArgumentException("ratingKey required");
+        }
+
+        PlexServer server = requireSelectedServer();
+        PlexPmsApi api = pmsApi(server);
+        String token = pmsToken(server);
+
+        Response<MediaContainerResponse> response = api.getMetadata(ratingKey, token).execute();
+        MediaContainer container = requireContainer(response, "fetch metadata " + ratingKey);
+        List<PlexMediaItem> items = mapMetadata(container, server, token);
+        if (items.isEmpty()) {
+            throw new IllegalStateException("No metadata for ratingKey " + ratingKey);
+        }
+        return items.get(0);
     }
 
     private PlexPage fetchChildrenPage(PlexMediaItem parent, int offset) throws IOException {
