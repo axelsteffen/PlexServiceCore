@@ -29,7 +29,8 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
         ON_DECK,
         RECENTLY_ADDED,
         WATCHLIST,
-        HUB_RECOMMENDED
+        HUB_RECOMMENDED,
+        SEARCH
     }
 
     private final Kind mKind;
@@ -39,6 +40,9 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
     private final int mWatchlistType;
     private final List<MediaItem> mMediaItems;
     private final String mNextPageKey;
+    private final int mSearchType;
+    @Nullable
+    private final String mSearchQuery;
 
     private PlexMediaGroupAdapter(Kind kind,
                                   @Nullable PlexLibrary library,
@@ -47,6 +51,18 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
                                   int watchlistType,
                                   List<MediaItem> mediaItems,
                                   @Nullable String nextPageKey) {
+        this(kind, library, container, title, watchlistType, mediaItems, nextPageKey, 0, null);
+    }
+
+    private PlexMediaGroupAdapter(Kind kind,
+                                  @Nullable PlexLibrary library,
+                                  @Nullable PlexMediaItem container,
+                                  @Nullable String title,
+                                  int watchlistType,
+                                  List<MediaItem> mediaItems,
+                                  @Nullable String nextPageKey,
+                                  int searchType,
+                                  @Nullable String searchQuery) {
         mKind = kind != null ? kind : Kind.LIBRARY;
         mLibrary = library;
         mContainer = container;
@@ -54,6 +70,8 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
         mWatchlistType = watchlistType;
         mMediaItems = mediaItems;
         mNextPageKey = nextPageKey;
+        mSearchType = searchType;
+        mSearchQuery = searchQuery;
     }
 
     /**
@@ -141,6 +159,43 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
     }
 
     /**
+     * Browse-stub card (e.g. "Alle Filme") plus the "Suchen" entry card in the same row,
+     * right next to it. {@code searchCardTitle} must be non-empty to add the search card —
+     * pass it explicitly, it is never defaulted (unlike {@code browseCardTitle}). Click
+     * routing (app side) recognizes {@link PlexMediaItemAdapter#SEARCH_ENTRY_MOVIE}/
+     * {@code SEARCH_ENTRY_SHOW} and opens the dedicated Plex search screen instead of the
+     * library-browse grid.
+     */
+    @Nullable
+    public static PlexMediaGroupAdapter fromBrowseCard(@Nullable PlexLibrary library,
+                                                       @Nullable String rowTitle,
+                                                       @Nullable String browseCardTitle,
+                                                       @Nullable String searchCardTitle) {
+        if (library == null || library.getKey() == null || library.getKey().isEmpty()) {
+            return null;
+        }
+        if (rowTitle == null || rowTitle.isEmpty()) {
+            return null;
+        }
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        MediaItem browseStub = PlexMediaItemAdapter.fromLibraryBrowse(library, browseCardTitle);
+        if (browseStub != null) {
+            mediaItems.add(browseStub);
+        }
+        if (searchCardTitle != null && !searchCardTitle.isEmpty()) {
+            MediaItem searchStub = PlexMediaItemAdapter.fromSearchEntry(library, searchCardTitle);
+            if (searchStub != null) {
+                mediaItems.add(searchStub);
+            }
+        }
+        if (mediaItems.isEmpty()) {
+            return null;
+        }
+        return new PlexMediaGroupAdapter(
+                Kind.HUB_RECOMMENDED, library, null, rowTitle, 0, mediaItems, null);
+    }
+
+    /**
      * Titled shelf without browse stub (Continue Watching, Recently Added, Watchlist).
      */
     @Nullable
@@ -185,6 +240,30 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
         }
         return new PlexMediaGroupAdapter(
                 resolved, library, null, title, watchlistType, mediaItems, nextPageKeyFrom(page));
+    }
+
+    /**
+     * Search result row/grid (title-filtered section search). {@code searchType} is
+     * {@code PlexPmsApi.TYPE_MOVIE}/{@code TYPE_SHOW}; {@code query} is kept so
+     * {@link #continueFrom} can re-issue the same search on the next page.
+     */
+    @Nullable
+    public static PlexMediaGroupAdapter fromSearch(@Nullable String title,
+                                                   @Nullable PlexLibrary library,
+                                                   int searchType,
+                                                   @Nullable String query,
+                                                   @Nullable List<PlexMediaItem> items,
+                                                   @Nullable PlexPage page) {
+        if (query == null || query.isEmpty()) {
+            return null;
+        }
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        appendItems(mediaItems, items);
+        if (mediaItems.isEmpty()) {
+            return null;
+        }
+        return new PlexMediaGroupAdapter(
+                Kind.SEARCH, library, null, title, 0, mediaItems, nextPageKeyFrom(page), searchType, query);
     }
 
     /**
@@ -256,7 +335,9 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
                 base.mTitle,
                 base.mWatchlistType,
                 mediaItems,
-                nextPageKeyFrom(page));
+                nextPageKeyFrom(page),
+                base.mSearchType,
+                base.mSearchQuery);
     }
 
     public Kind getKind() {
@@ -296,6 +377,20 @@ public final class PlexMediaGroupAdapter implements MediaGroup {
 
     public boolean isWatchlistGroup() {
         return mKind == Kind.WATCHLIST;
+    }
+
+    public boolean isSearchGroup() {
+        return mKind == Kind.SEARCH;
+    }
+
+    /** {@code PlexPmsApi.TYPE_MOVIE}/{@code TYPE_SHOW}; only meaningful when {@link #isSearchGroup()}. */
+    public int getSearchType() {
+        return mSearchType;
+    }
+
+    @Nullable
+    public String getSearchQuery() {
+        return mSearchQuery;
     }
 
     @Override

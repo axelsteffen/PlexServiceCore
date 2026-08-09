@@ -45,4 +45,10 @@ public interface PlexLibraryService {
      * Discover watchlist (official-app style), typically filtered to movies ({@code type=1}).
      */
     Observable<PlexMediaPage> getWatchlistPageObserve(int type, int offset);
+
+    /**
+     * Title-filtered section search. {@code type} = PlexPmsApi.TYPE_MOVIE / TYPE_SHOW.
+     * Reuses the same container paging as {@link #getMoviesPageObserve} / {@link #getShowsPageObserve}.
+     */
+    Observable<PlexMediaPage> getSearchPageObserve(PlexLibrary library, int type, String query, int offset);
 }

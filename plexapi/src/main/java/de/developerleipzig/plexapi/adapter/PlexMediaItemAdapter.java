@@ -28,6 +28,14 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
     private static final String TYPE_EPISODE = "episode";
     /** Opens full library grid via {@link #getReloadPageKey()} (Phase 3.4). */
     private static final String TYPE_LIBRARY = "library";
+    /**
+     * Marker {@code reloadPageKey} values for the "Suchen" entry cards (Plex search).
+     * Never collide with a real {@code library.getKey()} (those are PMS section ids).
+     * App-side click routing should compare {@code Video.getReloadPageKey()} against
+     * these before treating an item as a real library-browse stub.
+     */
+    public static final String SEARCH_ENTRY_MOVIE = "search:movie";
+    public static final String SEARCH_ENTRY_SHOW = "search:show";
     private static final String TITLE_SEP = " · ";
     /** Genre tags shown in {@code secondTitle}; more would crowd the TV card/detail layout. */
     private static final int MAX_GENRES_SHOWN = 3;
@@ -91,6 +99,31 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
                 0L,
                 null,
                 0);
+        return new PlexMediaItemAdapter(stub, library.getType());
+    }
+
+    /**
+     * "Suchen" entry card — first item in the Filme/TV-Shows row. Click routing (app side)
+     * recognizes {@link #SEARCH_ENTRY_MOVIE}/{@link #SEARCH_ENTRY_SHOW} via
+     * {@code getReloadPageKey()} and opens the dedicated Plex search screen instead of the
+     * library-browse grid.
+     */
+    @Nullable
+    public static PlexMediaItemAdapter fromSearchEntry(@Nullable PlexLibrary library,
+                                                       @Nullable String displayTitle) {
+        if (library == null || library.getType() == null) {
+            return null;
+        }
+        String marker;
+        if (TYPE_SHOW.equalsIgnoreCase(library.getType())) {
+            marker = SEARCH_ENTRY_SHOW;
+        } else if (TYPE_MOVIE.equalsIgnoreCase(library.getType())) {
+            marker = SEARCH_ENTRY_MOVIE;
+        } else {
+            return null;
+        }
+        String title = displayTitle != null && !displayTitle.isEmpty() ? displayTitle : "Suchen";
+        PlexMediaItem stub = new PlexMediaItemImpl(marker, marker, title, TYPE_LIBRARY, 0L, null, 0);
         return new PlexMediaItemAdapter(stub, library.getType());
     }
 

@@ -122,6 +122,11 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
         return Observable.fromCallable(() -> fetchWatchlistPage(type, offset));
     }
 
+    @Override
+    public Observable<PlexMediaPage> getSearchPageObserve(PlexLibrary library, int type, String query, int offset) {
+        return Observable.fromCallable(() -> fetchSectionPage(library, type, "search", offset, query));
+    }
+
     private List<PlexLibrary> fetchLibraries() throws IOException {
         PlexServer server = requireSelectedServer();
         PlexPmsApi api = pmsApi(server);
@@ -150,6 +155,11 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
 
     private PlexPage fetchSectionPage(PlexLibrary library, int type, String label, int offset)
             throws IOException {
+        return fetchSectionPage(library, type, label, offset, null);
+    }
+
+    private PlexPage fetchSectionPage(PlexLibrary library, int type, String label, int offset, String title)
+            throws IOException {
         if (library == null || library.getKey() == null || library.getKey().isEmpty()) {
             throw new IllegalArgumentException("library with key required");
         }
@@ -160,7 +170,7 @@ public class PlexLibraryServiceImpl implements PlexLibraryService {
         String sectionId = sectionIdFromKey(library.getKey());
 
         Response<MediaContainerResponse> response = api.getSectionItems(
-                sectionId, type, offset, mPageSize, token).execute();
+                sectionId, type, title, offset, mPageSize, token).execute();
         MediaContainer container = requireContainer(response, "list " + label + " for section " + sectionId);
 
         List<PlexMediaItem> items = mapMetadata(container, server, token);

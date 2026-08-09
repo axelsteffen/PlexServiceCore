@@ -381,6 +381,9 @@ paths:
         Code: PlexPmsApi.getSectionItems.
         PoC movies: `type=1` (Metadata Types: movie=1).
         Use Container-Start/Size headers for lazy paging on TV.
+        `title` reuses this endpoint for title-filtered search (PlexLibraryService
+        .getSearchPageObserve) instead of PMS's own /library/sections/{key}/search
+        or /hubs/search, so results keep real Container-Start/Size paging.
       operationId: getSectionItems
       parameters:
         - $ref: "#/components/parameters/XPlexTokenHeader"
@@ -395,6 +398,13 @@ paths:
           in: query
           schema: { type: integer }
           description: "Metadata type number (1=movie, 2=show, 4=episode, …)"
+        - name: title
+          in: query
+          schema: { type: string }
+          description: >-
+            Title filter (PlexLibraryService.getSearchPageObserve). Omitted for
+            plain browse calls. Match semantics (substring vs. prefix, case
+            sensitivity) are not documented upstream — verified empirically only.
       responses:
         "200":
           description: Metadata list

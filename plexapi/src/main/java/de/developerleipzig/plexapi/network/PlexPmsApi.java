@@ -34,6 +34,7 @@ public interface PlexPmsApi {
     Call<MediaContainerResponse> getSectionItems(
             @Path("sectionId") String sectionId,
             @Query("type") Integer type,
+            @Query("title") String title,
             @Header(PlexHeaders.CONTAINER_START) Integer containerStart,
             @Header(PlexHeaders.CONTAINER_SIZE) Integer containerSize,
             @Header(PlexHeaders.TOKEN) String token);
