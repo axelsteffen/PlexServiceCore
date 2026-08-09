@@ -12,6 +12,8 @@ import de.developerleipzig.plexserviceinterfaces.data.PlexBackedMediaItem;
 import de.developerleipzig.plexserviceinterfaces.data.PlexLibrary;
 import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem;
 
+import java.util.List;
+
 /**
  * Fork-only adapter: wraps {@link PlexMediaItem} as MSC {@link MediaItem}
  * so existing UI ({@code Video.from(MediaItem)}) can consume Plex items.
@@ -27,6 +29,8 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
     /** Opens full library grid via {@link #getReloadPageKey()} (Phase 3.4). */
     private static final String TYPE_LIBRARY = "library";
     private static final String TITLE_SEP = " · ";
+    /** Genre tags shown in {@code secondTitle}; more would crowd the TV card/detail layout. */
+    private static final int MAX_GENRES_SHOWN = 3;
 
     /**
      * Wrapped APK package id (upstream SmartTube). App-module {@code R.drawable} is not merged.
@@ -205,7 +209,7 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
         if (isSeason()) {
             return joinTitles(mItem.getTitle(), yearText());
         }
-        return yearText();
+        return joinTitles(yearText(), genreText());
     }
 
     @Nullable
@@ -239,6 +243,24 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
     private String yearText() {
         int year = mItem.getYear();
         return year > 0 ? String.valueOf(year) : null;
+    }
+
+    /** Joins up to {@link #MAX_GENRES_SHOWN} genre tags; {@code null} if none available. */
+    @Nullable
+    private String genreText() {
+        List<String> genres = mItem.getGenres();
+        if (genres == null || genres.isEmpty()) {
+            return null;
+        }
+        StringBuilder text = new StringBuilder();
+        int count = Math.min(genres.size(), MAX_GENRES_SHOWN);
+        for (int i = 0; i < count; i++) {
+            if (i > 0) {
+                text.append(", ");
+            }
+            text.append(genres.get(i));
+        }
+        return text.toString();
     }
 
     @Nullable

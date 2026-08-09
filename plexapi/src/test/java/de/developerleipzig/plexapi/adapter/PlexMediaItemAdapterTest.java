@@ -44,6 +44,32 @@ public class PlexMediaItemAdapterTest {
     }
 
     @Test
+    public void from_movieWithGenres_appendsGenresToSecondTitle() {
+        PlexMediaItem plex = new PlexMediaItemImpl(
+                "12346", "/library/metadata/12346", "Test Movie", "movie",
+                5_400_000L, null, 2020, 0L, null, null, 0, null, null, 0,
+                java.util.Arrays.asList("Action", "Drama", "Thriller", "Crime"));
+
+        MediaItem item = PlexMediaItemAdapter.from(plex);
+
+        assertNotNull(item);
+        // Capped at 3 genres for readability on TV screens.
+        assertEquals("2020 · Action, Drama, Thriller", item.getSecondTitle());
+    }
+
+    @Test
+    public void from_movieWithoutGenres_secondTitleIsYearOnly() {
+        PlexMediaItem plex = new PlexMediaItemImpl(
+                "12347", "/library/metadata/12347", "Test Movie", "movie",
+                5_400_000L, null, 2020);
+
+        MediaItem item = PlexMediaItemAdapter.from(plex);
+
+        assertNotNull(item);
+        assertEquals("2020", item.getSecondTitle());
+    }
+
+    @Test
     public void from_nullOrEmptyRatingKey_returnsNull() {
         assertNull(PlexMediaItemAdapter.from(null));
         assertNull(PlexMediaItemAdapter.from(new PlexMediaItemImpl(

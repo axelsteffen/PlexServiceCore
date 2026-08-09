@@ -1,5 +1,7 @@
 package de.developerleipzig.plexserviceinterfaces.data;
 
+import java.util.List;
+
 public interface PlexMediaItem {
     String getRatingKey();
 
@@ -35,4 +37,7 @@ public interface PlexMediaItem {
 
     /** Season number for episodes (PMS {@code parentIndex}); 0 if unknown. */
     int getParentIndex();
+
+    /** Movie/show genre tags (PMS {@code Genre}); empty if unknown. */
+    List<String> getGenres();
 }

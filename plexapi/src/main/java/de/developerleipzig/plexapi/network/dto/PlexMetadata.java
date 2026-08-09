@@ -2,6 +2,7 @@ package de.developerleipzig.plexapi.network.dto;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -73,6 +74,10 @@ public class PlexMetadata {
 
     @SerializedName("Media")
     private List<PlexMedia> mMedia;
+
+    /** Movie/show genre tags; absent on episodes/seasons. */
+    @SerializedName("Genre")
+    private List<PlexTag> mGenre;
 
     public String getRatingKey() {
         return mRatingKey;
@@ -148,5 +153,19 @@ public class PlexMetadata {
 
     public List<PlexMedia> getMedia() {
         return mMedia != null ? mMedia : Collections.emptyList();
+    }
+
+    public List<String> getGenres() {
+        if (mGenre == null || mGenre.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> genres = new ArrayList<>(mGenre.size());
+        for (PlexTag tag : mGenre) {
+            String value = tag != null ? tag.getTag() : null;
+            if (value != null && !value.isEmpty()) {
+                genres.add(value);
+            }
+        }
+        return genres;
     }
 }

@@ -54,4 +54,24 @@ public class PlexMediaItemImplTest {
         assertEquals("Season 1", item.getParentTitle());
         assertEquals("Breaking Bad", item.getGrandparentTitle());
     }
+
+    @Test
+    public void fromMetadata_mapsGenres() {
+        PlexMetadata movie = GSON.fromJson(
+                "{\"ratingKey\":\"5001\",\"key\":\"/library/metadata/5001\",\"title\":\"M\","
+                        + "\"type\":\"movie\",\"Genre\":[{\"tag\":\"Action\"},{\"tag\":\"Drama\"}]}",
+                PlexMetadata.class);
+        PlexMediaItemImpl item = PlexMediaItemImpl.fromMetadata(movie, "https://plex:32400/", "tok");
+        assertNotNull(item);
+        assertEquals(java.util.Arrays.asList("Action", "Drama"), item.getGenres());
+    }
+
+    @Test
+    public void fromMetadata_withoutGenre_returnsEmptyList() {
+        PlexMetadata bare = GSON.fromJson(
+                "{\"ratingKey\":\"5002\",\"title\":\"M\",\"type\":\"movie\"}", PlexMetadata.class);
+        PlexMediaItemImpl item = PlexMediaItemImpl.fromMetadata(bare, "https://plex:32400/", "tok");
+        assertNotNull(item);
+        assertTrue(item.getGenres().isEmpty());
+    }
 }

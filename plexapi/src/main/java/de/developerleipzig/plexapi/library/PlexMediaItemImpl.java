@@ -4,6 +4,9 @@ import de.developerleipzig.plexapi.network.PlexUrlHelper;
 import de.developerleipzig.plexapi.network.dto.PlexMetadata;
 import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Immutable {@link PlexMediaItem} from PMS metadata.
  */
@@ -22,30 +25,41 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
     private final String mParentTitle;
     private final String mGrandparentTitle;
     private final int mParentIndex;
+    private final List<String> mGenres;
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year) {
         this(ratingKey, key, title, type, durationMs, thumbUrl, year, 0L, null, null, 0,
-                null, null, 0);
+                null, null, 0, Collections.emptyList());
     }
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year, long viewOffsetMs) {
         this(ratingKey, key, title, type, durationMs, thumbUrl, year, viewOffsetMs, null, null, 0,
-                null, null, 0);
+                null, null, 0, Collections.emptyList());
     }
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year, long viewOffsetMs,
                              String parentRatingKey, String grandparentRatingKey, int index) {
         this(ratingKey, key, title, type, durationMs, thumbUrl, year, viewOffsetMs,
-                parentRatingKey, grandparentRatingKey, index, null, null, 0);
+                parentRatingKey, grandparentRatingKey, index, null, null, 0, Collections.emptyList());
     }
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year, long viewOffsetMs,
                              String parentRatingKey, String grandparentRatingKey, int index,
                              String parentTitle, String grandparentTitle, int parentIndex) {
+        this(ratingKey, key, title, type, durationMs, thumbUrl, year, viewOffsetMs,
+                parentRatingKey, grandparentRatingKey, index, parentTitle, grandparentTitle,
+                parentIndex, Collections.emptyList());
+    }
+
+    public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
+                             long durationMs, String thumbUrl, int year, long viewOffsetMs,
+                             String parentRatingKey, String grandparentRatingKey, int index,
+                             String parentTitle, String grandparentTitle, int parentIndex,
+                             List<String> genres) {
         mRatingKey = ratingKey;
         mKey = key;
         mTitle = title;
@@ -60,6 +74,7 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
         mParentTitle = parentTitle;
         mGrandparentTitle = grandparentTitle;
         mParentIndex = Math.max(0, parentIndex);
+        mGenres = genres != null ? genres : Collections.emptyList();
     }
 
     public static PlexMediaItemImpl fromMetadata(PlexMetadata metadata, String baseUrl, String token) {
@@ -81,7 +96,8 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
                 metadata.getIndex(),
                 metadata.getParentTitle(),
                 metadata.getGrandparentTitle(),
-                metadata.getParentIndex());
+                metadata.getParentIndex(),
+                metadata.getGenres());
     }
 
     /**
@@ -180,5 +196,10 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
     @Override
     public int getParentIndex() {
         return mParentIndex;
+    }
+
+    @Override
+    public List<String> getGenres() {
+        return mGenres;
     }
 }
