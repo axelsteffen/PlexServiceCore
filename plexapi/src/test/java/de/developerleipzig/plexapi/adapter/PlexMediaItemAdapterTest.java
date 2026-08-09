@@ -243,6 +243,30 @@ public class PlexMediaItemAdapterTest {
     }
 
     @Test
+    public void fromSearchEntry_movie_usesSearchMoviesDrawable() {
+        MediaItem item = PlexMediaItemAdapter.fromSearchEntry(
+                new PlexLibraryImpl("1", "Movies", "movie"), "Suchen");
+
+        assertNotNull(item);
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_movies_search",
+                item.getCardImageUrl());
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_movies_search",
+                item.getBackgroundImageUrl());
+    }
+
+    @Test
+    public void fromSearchEntry_show_usesSearchTvShowsDrawable() {
+        MediaItem item = PlexMediaItemAdapter.fromSearchEntry(
+                new PlexLibraryImpl("2", "TV Shows", "show"), null);
+
+        assertNotNull(item);
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_tv_shows_search",
+                item.getCardImageUrl());
+        assertEquals("android.resource://org.smarttube.beta/drawable/all_tv_shows_search",
+                item.getBackgroundImageUrl());
+    }
+
+    @Test
     public void fromSearchEntry_markerNeverCollidesWithRealLibraryKey() {
         // A real library.getKey() (PMS section id) must never equal a search marker,
         // otherwise PlexChannelUploadsPresenter.openChannel would misroute a real

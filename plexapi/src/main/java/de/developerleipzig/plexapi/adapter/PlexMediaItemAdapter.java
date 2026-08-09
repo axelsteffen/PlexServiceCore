@@ -49,6 +49,10 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
             "android.resource://" + WRAPPER_PACKAGE + "/drawable/all_movies";
     private static final String DRAWABLE_ALL_TV_SHOWS =
             "android.resource://" + WRAPPER_PACKAGE + "/drawable/all_tv_shows";
+    private static final String DRAWABLE_SEARCH_MOVIES =
+            "android.resource://" + WRAPPER_PACKAGE + "/drawable/all_movies_search";
+    private static final String DRAWABLE_SEARCH_TV_SHOWS =
+            "android.resource://" + WRAPPER_PACKAGE + "/drawable/all_tv_shows_search";
 
     private final PlexMediaItem mItem;
     private final int mId;
@@ -382,13 +386,20 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
         if (!isLibraryBrowse()) {
             return null;
         }
+        boolean isSearchEntry = isSearchEntry();
         if (TYPE_SHOW.equalsIgnoreCase(mLibraryType)) {
-            return DRAWABLE_ALL_TV_SHOWS;
+            return isSearchEntry ? DRAWABLE_SEARCH_TV_SHOWS : DRAWABLE_ALL_TV_SHOWS;
         }
         if (TYPE_MOVIE.equalsIgnoreCase(mLibraryType)) {
-            return DRAWABLE_ALL_MOVIES;
+            return isSearchEntry ? DRAWABLE_SEARCH_MOVIES : DRAWABLE_ALL_MOVIES;
         }
         return null;
+    }
+
+    /** True for the "Suchen" entry stub created by {@link #fromSearchEntry}. */
+    private boolean isSearchEntry() {
+        String ratingKey = mItem.getRatingKey();
+        return SEARCH_ENTRY_MOVIE.equals(ratingKey) || SEARCH_ENTRY_SHOW.equals(ratingKey);
     }
 
     @Override
