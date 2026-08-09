@@ -220,4 +220,34 @@ public class PlexMediaItemAdapterTest {
         assertEquals("android.resource://org.smarttube.beta/drawable/all_tv_shows",
                 item.getBackgroundImageUrl());
     }
+
+    @Test
+    public void fromSearchEntry_movie_usesMarkerReloadKey() {
+        MediaItem item = PlexMediaItemAdapter.fromSearchEntry(
+                new PlexLibraryImpl("1", "Movies", "movie"), "Suchen");
+
+        assertNotNull(item);
+        assertEquals(PlexMediaItemAdapter.SEARCH_ENTRY_MOVIE, item.getReloadPageKey());
+        assertNull(item.getVideoId());
+        assertTrue(item.hasUploads());
+    }
+
+    @Test
+    public void fromSearchEntry_show_usesMarkerReloadKey() {
+        MediaItem item = PlexMediaItemAdapter.fromSearchEntry(
+                new PlexLibraryImpl("2", "TV Shows", "show"), null);
+
+        assertNotNull(item);
+        assertEquals(PlexMediaItemAdapter.SEARCH_ENTRY_SHOW, item.getReloadPageKey());
+        assertEquals("Suchen", item.getTitle());
+    }
+
+    @Test
+    public void fromSearchEntry_markerNeverCollidesWithRealLibraryKey() {
+        // A real library.getKey() (PMS section id) must never equal a search marker,
+        // otherwise PlexChannelUploadsPresenter.openChannel would misroute a real
+        // library-browse stub to the search screen.
+        assertFalse(PlexMediaItemAdapter.SEARCH_ENTRY_MOVIE.matches("\\d+"));
+        assertFalse(PlexMediaItemAdapter.SEARCH_ENTRY_SHOW.matches("\\d+"));
+    }
 }

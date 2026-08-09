@@ -128,6 +128,56 @@ public class PlexLibraryServiceImplTest {
     }
 
     @Test
+    public void getSearchPageObserve_sendsTitleAndTypeQuery() throws Exception {
+        mServer.enqueue(new MockResponse().setResponseCode(200).setBody("{"
+                + "\"MediaContainer\":{"
+                + "\"offset\":0,"
+                + "\"size\":1,"
+                + "\"totalSize\":1,"
+                + "\"Metadata\":[{"
+                + "\"ratingKey\":\"1049\","
+                + "\"key\":\"/library/metadata/1049\","
+                + "\"type\":\"movie\","
+                + "\"title\":\"Zoolander\","
+                + "\"year\":2001"
+                + "}]"
+                + "}}"));
+
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+        de.developerleipzig.plexserviceinterfaces.data.PlexMediaPage page =
+                mService.getSearchPageObserve(library, PlexPmsApi.TYPE_MOVIE, "Zoolander", 0).blockingFirst();
+
+        assertEquals(1, page.getItems().size());
+        assertEquals("1049", page.getItems().get(0).getRatingKey());
+        assertEquals(0, page.getOffset());
+        assertEquals(1, page.getTotalSize());
+
+        RecordedRequest request = mServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(request);
+        assertTrue(request.getPath().contains("library/sections/1/all"));
+        assertTrue(request.getPath().contains("type=1"));
+        assertTrue(request.getPath().contains("title=Zoolander"));
+        assertEquals("0", request.getHeader("X-Plex-Container-Start"));
+        assertEquals("50", request.getHeader("X-Plex-Container-Size"));
+    }
+
+    @Test
+    public void getMoviesPageObserve_omitsTitleQuery() throws Exception {
+        mServer.enqueue(new MockResponse().setResponseCode(200).setBody("{"
+                + "\"MediaContainer\":{\"Metadata\":[]}"
+                + "}"));
+
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+        mService.getMoviesPageObserve(library, 0).blockingFirst();
+
+        RecordedRequest request = mServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(request);
+        assertTrue(request.getPath().contains("library/sections/1/all"));
+        assertTrue("browse requests must not send a title filter: " + request.getPath(),
+                !request.getPath().contains("title="));
+    }
+
+    @Test
     public void getMoviesObserve_mapsFirstPageAndAbsoluteThumb() throws Exception {
         mServer.enqueue(new MockResponse().setResponseCode(200).setBody("{"
                 + "\"MediaContainer\":{"

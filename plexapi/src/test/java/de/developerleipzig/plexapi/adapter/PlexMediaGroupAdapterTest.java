@@ -4,6 +4,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import de.developerleipzig.plexapi.library.PlexLibraryImpl;
 import de.developerleipzig.plexapi.library.PlexMediaItemImpl;
 import de.developerleipzig.plexapi.library.PlexPage;
+import de.developerleipzig.plexapi.network.PlexPmsApi;
 import de.developerleipzig.plexserviceinterfaces.data.PlexLibrary;
 import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem;
 
@@ -190,6 +191,78 @@ public class PlexMediaGroupAdapterTest {
         assertEquals(2, group.getMediaItems().size());
         assertNotNull(group.getMediaItems().get(0).getReloadPageKey());
         assertEquals("10", group.getMediaItems().get(1).getVideoId());
+    }
+
+    @Test
+    public void fromBrowseCard_threeArg_hasNoSearchStub() {
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+
+        MediaGroup group = PlexMediaGroupAdapter.fromBrowseCard(library, "Alle Filme", "Alle Filme");
+
+        assertNotNull(group);
+        assertEquals(1, group.getMediaItems().size());
+        assertNotNull(group.getMediaItems().get(0).getReloadPageKey());
+    }
+
+    @Test
+    public void fromBrowseCard_withSearchCardTitle_addsSearchStubNextToBrowseStub() {
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+
+        MediaGroup group = PlexMediaGroupAdapter.fromBrowseCard(
+                library, "Alle Filme", "Alle Filme", "Suchen");
+
+        assertNotNull(group);
+        assertEquals(2, group.getMediaItems().size());
+        // Browse stub ("Alle Filme") first, "Suchen" card right next to it.
+        assertEquals("1", group.getMediaItems().get(0).getReloadPageKey());
+        assertEquals(PlexMediaItemAdapter.SEARCH_ENTRY_MOVIE,
+                group.getMediaItems().get(1).getReloadPageKey());
+    }
+
+    @Test
+    public void fromSearch_mapsKindAndSearchFields() {
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+        List<PlexMediaItem> items = Collections.singletonList(movie("10", "Alpha"));
+
+        PlexMediaGroupAdapter group = PlexMediaGroupAdapter.fromSearch(
+                "Filme", library, PlexPmsApi.TYPE_MOVIE, "alp", items, new PlexPage(items, 0, 1));
+
+        assertNotNull(group);
+        assertTrue(group.isSearchGroup());
+        assertEquals(PlexMediaGroupAdapter.Kind.SEARCH, group.getKind());
+        assertEquals(PlexPmsApi.TYPE_MOVIE, group.getSearchType());
+        assertEquals("alp", group.getSearchQuery());
+        assertEquals("Filme", group.getTitle());
+        assertEquals(1, group.getMediaItems().size());
+    }
+
+    @Test
+    public void fromSearch_blankQuery_returnsNull() {
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+        List<PlexMediaItem> items = Collections.singletonList(movie("10", "Alpha"));
+
+        assertNull(PlexMediaGroupAdapter.fromSearch("Filme", library, PlexPmsApi.TYPE_MOVIE, "", items, null));
+        assertNull(PlexMediaGroupAdapter.fromSearch("Filme", library, PlexPmsApi.TYPE_MOVIE, null, items, null));
+    }
+
+    @Test
+    public void continueFrom_preservesSearchTypeAndQuery() {
+        PlexLibrary library = new PlexLibraryImpl("1", "Movies", "movie");
+        List<PlexMediaItem> firstPageItems = Collections.nCopies(50, movie("10", "Alpha"));
+        PlexMediaGroupAdapter base = PlexMediaGroupAdapter.fromSearch(
+                "Filme", library, PlexPmsApi.TYPE_MOVIE, "alp",
+                firstPageItems, new PlexPage(firstPageItems, 0, 120));
+
+        assertNotNull(base);
+        List<PlexMediaItem> nextItems = Collections.singletonList(movie("20", "Beta"));
+        PlexMediaGroupAdapter continuation = PlexMediaGroupAdapter.continueFrom(
+                base, nextItems, new PlexPage(nextItems, 50, 120));
+
+        assertNotNull(continuation);
+        assertTrue(continuation.isSearchGroup());
+        assertEquals(PlexPmsApi.TYPE_MOVIE, continuation.getSearchType());
+        assertEquals("alp", continuation.getSearchQuery());
+        assertEquals("51", continuation.getNextPageKey());
     }
 
     private static PlexMediaItem movie(String ratingKey, String title) {
