@@ -1,17 +1,17 @@
 package de.developerleipzig.plexapi.service;
 
+import android.content.Context;
+
 import de.developerleipzig.plexapi.network.PlexHeaders;
 import de.developerleipzig.plexapi.network.PlexRetrofitHelper;
 import de.developerleipzig.plexapi.network.PlexTvApi;
 import de.developerleipzig.plexapi.prefs.PlexPrefs;
+import de.developerleipzig.plexapi.testutil.FakeAndroidContext;
 import de.developerleipzig.plexserviceinterfaces.data.PlexAuthPin;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.RobolectricTestRunner;
-import org.robolectric.RuntimeEnvironment;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,9 +29,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(RobolectricTestRunner.class)
 public class PlexSignInServiceImplTest {
     private MockWebServer mServer;
+    private Context mContext;
     private PlexPrefs mPrefs;
     private PlexSignInServiceImpl mService;
 
@@ -45,7 +45,8 @@ public class PlexSignInServiceImplTest {
         PlexPrefs.unhold();
         PlexRetrofitHelper.reset();
 
-        mPrefs = PlexPrefs.instance(RuntimeEnvironment.application);
+        mContext = FakeAndroidContext.create();
+        mPrefs = PlexPrefs.instance(mContext);
         mPrefs.clearAuthToken();
 
         mServer = new MockWebServer();
@@ -72,7 +73,7 @@ public class PlexSignInServiceImplTest {
         assertEquals("test-token-abc", mService.getAuthToken());
 
         PlexPrefs.unhold();
-        PlexPrefs reloaded = PlexPrefs.instance(RuntimeEnvironment.application);
+        PlexPrefs reloaded = PlexPrefs.instance(mContext);
         assertEquals("test-token-abc", reloaded.getAuthToken());
     }
 
@@ -92,7 +93,7 @@ public class PlexSignInServiceImplTest {
         assertEquals(first, second);
 
         PlexPrefs.unhold();
-        assertEquals(first, PlexPrefs.instance(RuntimeEnvironment.application).getClientIdentifier());
+        assertEquals(first, PlexPrefs.instance(mContext).getClientIdentifier());
     }
 
     @Test

@@ -1,21 +1,24 @@
 package de.developerleipzig.plexapi.service;
 
+import android.content.Context;
+
 import de.developerleipzig.plexapi.network.PlexRetrofitHelper;
 import de.developerleipzig.plexapi.network.PlexTvResourcesApi;
 import de.developerleipzig.plexapi.prefs.PlexPrefs;
 import de.developerleipzig.plexapi.server.PlexServerImpl;
+import de.developerleipzig.plexapi.testutil.FakeAndroidContext;
 import de.developerleipzig.plexserviceinterfaces.data.PlexServer;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.RobolectricTestRunner;
-import org.robolectric.RuntimeEnvironment;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.android.plugins.RxAndroidPlugins;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -25,7 +28,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(RobolectricTestRunner.class)
 public class PlexServerServiceImplTest {
     private MockWebServer mServer;
     private PlexPrefs mPrefs;
@@ -33,10 +35,17 @@ public class PlexServerServiceImplTest {
 
     @Before
     public void setUp() throws Exception {
+        // No Looper without Robolectric (see gradle/plexapi.gradle.kts); trampoline keeps
+        // AndroidSchedulers.mainThread() from touching the (null) main Looper.
+        RxJavaPlugins.setNewThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+        RxAndroidPlugins.setInitMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+        RxAndroidPlugins.setMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+
         PlexPrefs.unhold();
         PlexRetrofitHelper.reset();
 
-        mPrefs = PlexPrefs.instance(RuntimeEnvironment.application);
+        Context context = FakeAndroidContext.create();
+        mPrefs = PlexPrefs.instance(context);
         mPrefs.clearAuthToken();
         mPrefs.clearSelectedServer();
         mPrefs.setAuthToken("account-token");
@@ -54,10 +63,12 @@ public class PlexServerServiceImplTest {
         mServer.shutdown();
         PlexPrefs.unhold();
         PlexRetrofitHelper.reset();
+        RxJavaPlugins.reset();
+        RxAndroidPlugins.reset();
     }
 
     @Test
-    public void getServersObserve_filtersServersAndPicksLocalHttps() throws Exception {
+    public void getServersObserve_filtersServersAndPrefersRemoteOverPrivateLocal() throws Exception {
         mServer.enqueue(new MockResponse().setResponseCode(200).setBody("["
                 + "{"
                 + "\"name\":\"Phone\",\"product\":\"Plex for Android\",\"provides\":\"client\","
@@ -81,7 +92,9 @@ public class PlexServerServiceImplTest {
         PlexServer server = servers.get(0);
         assertEquals("nas-1", server.getClientIdentifier());
         assertEquals("NAS", server.getName());
-        assertEquals("https://192.168.1.5:32400/", server.getBaseUrl());
+        // A remote connection is present, so the private LAN URI is ignored even though it's
+        // HTTPS — private IPs are only reachable on the server's own LAN (see PlexServerImpl).
+        assertEquals("http://nas.example:32400/", server.getBaseUrl());
         assertEquals("srv-token", server.getAccessToken());
         assertTrue(server.isOwned());
         assertTrue(server.isOnline());

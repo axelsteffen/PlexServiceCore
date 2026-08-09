@@ -1,23 +1,26 @@
 package de.developerleipzig.plexapi.service;
 
+import android.content.Context;
+
 import de.developerleipzig.plexapi.library.PlexMediaItemImpl;
 import de.developerleipzig.plexapi.media.PlexStreamInfoImpl;
 import de.developerleipzig.plexapi.network.PlexPmsApi;
 import de.developerleipzig.plexapi.network.PlexRetrofitHelper;
 import de.developerleipzig.plexapi.prefs.PlexPrefs;
 import de.developerleipzig.plexapi.server.PlexServerImpl;
+import de.developerleipzig.plexapi.testutil.FakeAndroidContext;
 import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem;
 import de.developerleipzig.plexserviceinterfaces.data.PlexStreamInfo;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.RobolectricTestRunner;
-import org.robolectric.RuntimeEnvironment;
 
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.android.plugins.RxAndroidPlugins;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -28,7 +31,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@RunWith(RobolectricTestRunner.class)
 public class PlexMediaServiceImplTest {
     private MockWebServer mServer;
     private PlexPrefs mPrefs;
@@ -37,10 +39,17 @@ public class PlexMediaServiceImplTest {
 
     @Before
     public void setUp() throws Exception {
+        // No Looper without Robolectric (see gradle/plexapi.gradle.kts); trampoline keeps
+        // AndroidSchedulers.mainThread() from touching the (null) main Looper.
+        RxJavaPlugins.setNewThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+        RxAndroidPlugins.setInitMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+        RxAndroidPlugins.setMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+
         PlexPrefs.unhold();
         PlexRetrofitHelper.reset();
 
-        mPrefs = PlexPrefs.instance(RuntimeEnvironment.application);
+        Context context = FakeAndroidContext.create();
+        mPrefs = PlexPrefs.instance(context);
         mPrefs.clearAuthToken();
         mPrefs.clearSelectedServer();
 
@@ -60,6 +69,8 @@ public class PlexMediaServiceImplTest {
         mServer.shutdown();
         PlexPrefs.unhold();
         PlexRetrofitHelper.reset();
+        RxJavaPlugins.reset();
+        RxAndroidPlugins.reset();
     }
 
     @Test
