@@ -156,6 +156,11 @@ public final class PlexMediaFormat implements MediaFormat {
     }
 
     @Override
+    public String getAudioTrackId() {
+        return null;
+    }
+
+    @Override
     public String getSourceUrl() {
         return null;
     }
