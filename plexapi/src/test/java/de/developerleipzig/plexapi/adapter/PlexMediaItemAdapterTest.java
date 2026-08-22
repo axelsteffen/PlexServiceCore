@@ -267,6 +267,96 @@ public class PlexMediaItemAdapterTest {
     }
 
     @Test
+    public void badgeText_movie_isHoursMinutesSeconds() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "12345", "/library/metadata/12345", "Test Movie", "movie",
+                5_400_000L, null, 2020));
+
+        assertNotNull(item);
+        assertEquals("1:30:00", item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_episodeUnderAnHour_omitsHours() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "4001", "/library/metadata/4001", "Pilot", "episode", 754_000L, null, 2008));
+
+        assertNotNull(item);
+        assertEquals("12:34", item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_withoutDuration_isNull() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "4002", "/library/metadata/4002", "Pilot", "episode", 0L, null, 2008));
+
+        assertNotNull(item);
+        assertNull(item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_show_countsSeasons() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "2001", "/library/metadata/2001", "Breaking Bad", "show", 5_400_000L, null, 2008,
+                0L, null, null, 0, null, null, 0, null, 3, 62));
+
+        assertNotNull(item);
+        assertEquals("3 Staffeln", item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_showWithSingleSeason_isSingular() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "2002", "/library/metadata/2002", "Chernobyl", "show", 0L, null, 2019,
+                0L, null, null, 0, null, null, 0, null, 1, 5));
+
+        assertNotNull(item);
+        assertEquals("1 Staffel", item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_showWithoutSeasonCount_fallsBackToEpisodes() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "2003", "/library/metadata/2003", "Breaking Bad", "show", 0L, null, 2008,
+                0L, null, null, 0, null, null, 0, null, 0, 62));
+
+        assertNotNull(item);
+        assertEquals("62 Folgen", item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_season_countsEpisodes() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "3001", "/library/metadata/3001", "Season 1", "season", 0L, null, 2008,
+                0L, "2001", "2001", 1, "Breaking Bad", "Breaking Bad", 0, null, 7, 7));
+
+        assertNotNull(item);
+        assertEquals("7 Folgen", item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_containerWithoutCounts_isNull() {
+        MediaItem item = PlexMediaItemAdapter.from(new PlexMediaItemImpl(
+                "2004", "/library/metadata/2004", "Breaking Bad", "show", 5_400_000L, null, 2008));
+
+        assertNotNull(item);
+        assertNull(item.getBadgeText());
+    }
+
+    @Test
+    public void badgeText_stubCards_isNull() {
+        MediaItem libraryBrowse = PlexMediaItemAdapter.fromLibraryBrowse(
+                new PlexLibraryImpl("1", "Movies", "movie"));
+        MediaItem searchEntry = PlexMediaItemAdapter.fromSearchEntry(
+                new PlexLibraryImpl("1", "Movies", "movie"), "Suchen");
+
+        assertNotNull(libraryBrowse);
+        assertNotNull(searchEntry);
+        assertNull(libraryBrowse.getBadgeText());
+        assertNull(searchEntry.getBadgeText());
+    }
+
+    @Test
     public void fromSearchEntry_markerNeverCollidesWithRealLibraryKey() {
         // A real library.getKey() (PMS section id) must never equal a search marker,
         // otherwise PlexChannelUploadsPresenter.openChannel would misroute a real

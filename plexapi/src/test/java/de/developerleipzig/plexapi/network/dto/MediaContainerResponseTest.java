@@ -65,6 +65,43 @@ public class MediaContainerResponseTest {
     }
 
     @Test
+    public void parsesShowChildAndLeafCount() {
+        String json = "{"
+                + "\"MediaContainer\":{"
+                + "\"Metadata\":[{"
+                + "\"ratingKey\":\"2001\","
+                + "\"key\":\"/library/metadata/2001/children\","
+                + "\"type\":\"show\","
+                + "\"title\":\"Breaking Bad\","
+                + "\"childCount\":5,"
+                + "\"leafCount\":62"
+                + "}]"
+                + "}}";
+
+        MediaContainerResponse response = mGson.fromJson(json, MediaContainerResponse.class);
+        PlexMetadata meta = response.getMediaContainer().getMetadata().get(0);
+        assertEquals(5, meta.getChildCount());
+        assertEquals(62, meta.getLeafCount());
+    }
+
+    @Test
+    public void parsesMetadataWithoutCounts() {
+        String json = "{"
+                + "\"MediaContainer\":{"
+                + "\"Metadata\":[{"
+                + "\"ratingKey\":\"1049\","
+                + "\"type\":\"movie\","
+                + "\"title\":\"Zoolander\""
+                + "}]"
+                + "}}";
+
+        MediaContainerResponse response = mGson.fromJson(json, MediaContainerResponse.class);
+        PlexMetadata meta = response.getMediaContainer().getMetadata().get(0);
+        assertEquals(0, meta.getChildCount());
+        assertEquals(0, meta.getLeafCount());
+    }
+
+    @Test
     public void parsesPlexResourceServer() {
         String json = "{"
                 + "\"name\":\"Home\","
