@@ -26,6 +26,8 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
     private final String mGrandparentTitle;
     private final int mParentIndex;
     private final List<String> mGenres;
+    private final int mChildCount;
+    private final int mLeafCount;
 
     public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
                              long durationMs, String thumbUrl, int year) {
@@ -60,6 +62,16 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
                              String parentRatingKey, String grandparentRatingKey, int index,
                              String parentTitle, String grandparentTitle, int parentIndex,
                              List<String> genres) {
+        this(ratingKey, key, title, type, durationMs, thumbUrl, year, viewOffsetMs,
+                parentRatingKey, grandparentRatingKey, index, parentTitle, grandparentTitle,
+                parentIndex, genres, 0, 0);
+    }
+
+    public PlexMediaItemImpl(String ratingKey, String key, String title, String type,
+                             long durationMs, String thumbUrl, int year, long viewOffsetMs,
+                             String parentRatingKey, String grandparentRatingKey, int index,
+                             String parentTitle, String grandparentTitle, int parentIndex,
+                             List<String> genres, int childCount, int leafCount) {
         mRatingKey = ratingKey;
         mKey = key;
         mTitle = title;
@@ -75,6 +87,8 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
         mGrandparentTitle = grandparentTitle;
         mParentIndex = Math.max(0, parentIndex);
         mGenres = genres != null ? genres : Collections.emptyList();
+        mChildCount = Math.max(0, childCount);
+        mLeafCount = Math.max(0, leafCount);
     }
 
     public static PlexMediaItemImpl fromMetadata(PlexMetadata metadata, String baseUrl, String token) {
@@ -97,7 +111,9 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
                 metadata.getParentTitle(),
                 metadata.getGrandparentTitle(),
                 metadata.getParentIndex(),
-                metadata.getGenres());
+                metadata.getGenres(),
+                metadata.getChildCount(),
+                metadata.getLeafCount());
     }
 
     /**
@@ -201,5 +217,15 @@ public final class PlexMediaItemImpl implements PlexMediaItem {
     @Override
     public List<String> getGenres() {
         return mGenres;
+    }
+
+    @Override
+    public int getChildCount() {
+        return mChildCount;
+    }
+
+    @Override
+    public int getLeafCount() {
+        return mLeafCount;
     }
 }

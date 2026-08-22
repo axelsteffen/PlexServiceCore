@@ -12,6 +12,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Discover: `PlexDiscoverApi` watchlist (`discover.provider.plex.tv`) via `getWatchlistPageObserve`.
 - `PlexMediaGroupAdapter`: `Kind`, `fromSimple`, `fromRecommended` (browse stub without `/all` items).
 - `PlexLibraryService`: `getOnDeckPageObserve`, `getRecentlyAddedPageObserve`, `getSectionHubsObserve`, `getWatchlistPageObserve`.
+- `PlexMetadata.childCount` / `leafCount` + `PlexMediaItem.getChildCount()` / `getLeafCount()` (mapped in `PlexMediaItemImpl.fromMetadata`; new widest constructor, existing one delegates with `0, 0`).
+- `PlexMediaItemAdapter.getBadgeText()`: card overlay text — YouTube-style length for movies/episodes, season/episode count for shows/seasons, `null` for browse/search stubs.
 
 ### Fixed
 

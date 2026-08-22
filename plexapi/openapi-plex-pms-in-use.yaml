@@ -160,6 +160,8 @@ components:
         duration: { type: integer, description: Milliseconds }
         thumb: { type: string, description: Relative path under PMS base URL }
         art: { type: string }
+        childCount: { type: integer, description: "show → seasons; season → episodes" }
+        leafCount: { type: integer, description: "show/season → total episodes" }
         Media:
           type: array
           items: { $ref: "#/components/schemas/Media" }

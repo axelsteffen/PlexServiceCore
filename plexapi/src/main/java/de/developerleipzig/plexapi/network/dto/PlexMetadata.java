@@ -72,6 +72,14 @@ public class PlexMetadata {
     @SerializedName("parentIndex")
     private int mParentIndex;
 
+    /** Show → season count; season → episode count. */
+    @SerializedName("childCount")
+    private int mChildCount;
+
+    /** Show/season → total episode count. */
+    @SerializedName("leafCount")
+    private int mLeafCount;
+
     @SerializedName("Media")
     private List<PlexMedia> mMedia;
 
@@ -149,6 +157,14 @@ public class PlexMetadata {
 
     public int getParentIndex() {
         return mParentIndex;
+    }
+
+    public int getChildCount() {
+        return mChildCount;
+    }
+
+    public int getLeafCount() {
+        return mLeafCount;
     }
 
     public List<PlexMedia> getMedia() {

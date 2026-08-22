@@ -13,6 +13,7 @@ import de.developerleipzig.plexserviceinterfaces.data.PlexLibrary;
 import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Fork-only adapter: wraps {@link PlexMediaItem} as MSC {@link MediaItem}
@@ -353,9 +354,53 @@ public final class PlexMediaItemAdapter implements MediaItem, PlexBackedMediaIte
         return mItem.getDurationMs();
     }
 
+    /**
+     * Card overlay (upstream {@code Video.badge} → {@code ComplexImageCardView.setBadgeText}).
+     * Mirrors YouTube: playable items show their length, container cards a child count.
+     */
     @Override
     public String getBadgeText() {
-        return null;
+        if (isLibraryBrowse()) {
+            return null;
+        }
+        if (isContainer()) {
+            return containerCountBadge();
+        }
+        return formatDuration(mItem.getDurationMs());
+    }
+
+    /** Shows count their seasons, seasons their episodes; falls back to episodes for shows. */
+    @Nullable
+    private String containerCountBadge() {
+        if (isSeason()) {
+            return countBadge(mItem.getLeafCount(), "Folge", "Folgen");
+        }
+        String seasons = countBadge(mItem.getChildCount(), "Staffel", "Staffeln");
+        return seasons != null ? seasons : countBadge(mItem.getLeafCount(), "Folge", "Folgen");
+    }
+
+    @Nullable
+    private static String countBadge(int count, String singular, String plural) {
+        if (count <= 0) {
+            return null;
+        }
+        return count + " " + (count == 1 ? singular : plural);
+    }
+
+    /** YouTube-style length: {@code 12:34} below an hour, {@code 1:52:30} above. */
+    @Nullable
+    private static String formatDuration(long durationMs) {
+        if (durationMs <= 0L) {
+            return null;
+        }
+        long totalSeconds = durationMs / 1000L;
+        long hours = totalSeconds / 3600L;
+        long minutes = (totalSeconds % 3600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        if (hours > 0L) {
+            return String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds);
+        }
+        return String.format(Locale.US, "%d:%02d", minutes, seconds);
     }
 
     @Override

@@ -40,4 +40,10 @@ public interface PlexMediaItem {
 
     /** Movie/show genre tags (PMS {@code Genre}); empty if unknown. */
     List<String> getGenres();
+
+    /** Season count for shows, episode count for seasons (PMS {@code childCount}); 0 if unknown. */
+    int getChildCount();
+
+    /** Total episode count for shows/seasons (PMS {@code leafCount}); 0 if unknown. */
+    int getLeafCount();
 }
